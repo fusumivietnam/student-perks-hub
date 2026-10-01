@@ -16,7 +16,7 @@ Student-first directory for discovering verified education discounts, credits, t
 
 Requirements:
 
-- Node.js 20+
+- Node.js 24.21+ (LTS)
 - pnpm via Corepack
 - Docker-compatible container runtime
 
