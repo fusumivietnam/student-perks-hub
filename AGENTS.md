@@ -78,3 +78,21 @@ Run:
 - relevant tests or critical manual flow
 
 Then inspect the diff and remove unnecessary code.
+
+## Local development
+
+Use the repository-managed Supabase CLI. Do not add a separate PostgreSQL Docker Compose stack.
+
+Standard workflow:
+
+- `pnpm local:start` starts the local Supabase stack and writes local environment files.
+- `pnpm dev` starts Next.js.
+- `pnpm db:reset` rebuilds the local database from committed migrations and seed data.
+- `pnpm db:types` regenerates database TypeScript types.
+
+The desired database state lives in `supabase/schemas/`. Keep versioned migrations in
+`supabase/migrations/`. Do not make schema changes only through Studio.
+
+In GitHub Codespaces, keep the Supabase API unexposed. Browser-side requests must use
+the same-origin `/supabase/*` proxy; server-side code uses `SUPABASE_INTERNAL_URL`.
+
