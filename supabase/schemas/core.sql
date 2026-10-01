@@ -1,8 +1,6 @@
 -- Student Perks Hub declarative schema.
 -- This directory is the source of truth for database structure.
 
-create extension if not exists pgcrypto;
-
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
