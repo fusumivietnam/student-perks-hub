@@ -344,9 +344,6 @@ def bootstrap_issues(project):
 
 
 def ensure_views(login, project):
-    user = rest("GET", "user")
-    user_id = user["id"]
-
     fields = rest("GET", f"users/{urllib.parse.quote(login)}/projectsV2/{PROJECT_NUMBER}/fields?per_page=100")
     field_ids = {f["name"]: f["id"] for f in fields}
     visible_names = ["Title", "Status", "Priority", "Area", "Target", "Size"]
@@ -368,7 +365,7 @@ def ensure_views(login, project):
         ("Roadmap", "table", "is:issue -status:Done", [[priority_id, "asc"]] if priority_id else [], [target_id] if target_id else []),
     ]
 
-    endpoint = f"users/{user_id}/projectsV2/{PROJECT_NUMBER}/views"
+    endpoint = f"users/{urllib.parse.quote(login)}/projectsV2/{PROJECT_NUMBER}/views"
     for name, layout, filter_query, sort_by, group_by in definitions:
         if name in existing:
             continue
