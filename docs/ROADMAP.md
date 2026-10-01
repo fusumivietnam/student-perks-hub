@@ -17,7 +17,7 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] RLS baseline for profiles, categories, offers, bookmarks, and submissions
 - [x] Node 24 LTS + pinned pnpm + committed `pnpm-lock.yaml`
 - [x] CI: install, typecheck, lint, build
-- [x] Database CI: local Supabase start, reset, seed, type generation
+- [x] Database CI: local Supabase start, reset, seed, generated-type drift check
 - [x] CodeQL + Dependabot
 - [x] secret scanning + push protection
 - [x] protected `main` ruleset with squash-only PR flow
@@ -27,7 +27,7 @@ Work in small vertical slices. Every implementation slice must go through a pull
 ### In progress
 
 - [ ] #7 Verify a fresh GitHub Codespace boot end to end
-- [ ] #12 Implement OfferCard
+- [ ] #13 Seed a small reviewed set of verified offers
 
 ### Recently completed
 
@@ -35,12 +35,10 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #9 Verify initial migration and seed through Database CI
 - [x] #10 Generate Supabase database types and enforce schema/type drift checks
 - [x] #11 Render categories from Supabase
+- [x] #12 Implement OfferCard
 
 ### Next product slice
 
-- [ ] #12 Implement OfferCard
-- [ ] #12 Implement OfferCard
-- [ ] #13 Seed a small reviewed set of verified offers
 - [ ] #14 Build homepage offer sections
 
 ## 00 — Platform baseline
@@ -107,11 +105,11 @@ Status: **In progress**
 
 Issues: #12, #13
 
-- reusable OfferCard
-- benefit badges
-- small reviewed seed dataset
-- canonical official provider URLs only
-- summarized original descriptions; no scraped/copyright-copied text
+- [x] reusable OfferCard
+- [x] benefit badges
+- [ ] small reviewed seed dataset
+- [ ] canonical official provider URLs only
+- [ ] summarized original descriptions; no scraped/copyright-copied text
 
 ## 04 — Homepage offers
 
@@ -226,10 +224,6 @@ Issue: #21
 ```text
 #7 Codespaces verification (independent platform check)
 
-#11 Categories
-        ↓
-#12 OfferCard
-        ↓
 #13 Verified offer seed
         ↓
 #14 Homepage offer sections
