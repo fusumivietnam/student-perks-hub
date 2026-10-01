@@ -3,6 +3,10 @@ name: Project Sync
 on:
   issues:
     types: [opened, reopened, closed]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/project-sync.yml"
   workflow_dispatch:
     inputs:
       bootstrap:
@@ -60,7 +64,7 @@ jobs:
           fi
 
       - name: Bootstrap open issues
-        if: github.event_name == 'workflow_dispatch' && inputs.bootstrap
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bootstrap)
         shell: bash
         env:
           REPOSITORY: ${{ github.repository }}
