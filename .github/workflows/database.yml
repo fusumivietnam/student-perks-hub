@@ -78,6 +78,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: generate Supabase database types"
+          git pull --rebase origin chore/current-roadmap-db-types
           git push origin HEAD:chore/current-roadmap-db-types
 
       - name: Stop local Supabase
