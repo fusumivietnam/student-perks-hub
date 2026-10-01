@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GraduationCap } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 const navItems = [
   { href: "/", label: "Trang chủ" },
@@ -13,12 +13,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="size-5" aria-hidden="true" />
-          </span>
-          <span>Student Perks Hub</span>
-        </Link>
+        <BrandLogo />
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex" aria-label="Điều hướng chính">
           {navItems.map((item) => (
