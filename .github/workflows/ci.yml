@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       database: ${{ steps.filter.outputs.database }}
+      e2e: ${{ steps.filter.outputs.e2e }}
 
     steps:
       - name: Checkout
@@ -48,6 +49,12 @@ jobs:
             echo "database=true" >> "$GITHUB_OUTPUT"
           else
             echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -Eq '^(app/|components/|lib/|scripts/|supabase/|tests/e2e/|package\.json$|pnpm-lock\.yaml$|next\.config\.ts$|playwright\.config\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
           fi
 
   verify:
@@ -132,9 +139,54 @@ jobs:
         if: always()
         run: pnpm exec supabase stop --no-backup
 
+  e2e:
+    name: Critical browser flows
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start local Supabase and write environment
+        run: pnpm local:start
+
+      - name: Reset database
+        run: pnpm db:reset
+
+      - name: Run critical browser flows
+        run: pnpm test:e2e
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
   gate:
     name: CI Gate
-    needs: [changes, verify, database]
+    needs: [changes, verify, database, e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -146,9 +198,11 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           VERIFY_RESULT: ${{ needs.verify.result }}
           DATABASE_RESULT: ${{ needs.database.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
           set -euo pipefail
 
           [[ "${CHANGES_RESULT}" == "success" ]]
           [[ "${VERIFY_RESULT}" == "success" ]]
           [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
+          [[ "${E2E_RESULT}" == "success" || "${E2E_RESULT}" == "skipped" ]]
