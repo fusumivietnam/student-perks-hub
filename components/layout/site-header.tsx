@@ -1,5 +1,8 @@
 import Link from "next/link";
+
+import { signOut } from "@/app/login/actions";
 import { BrandLogo } from "@/components/brand-logo";
+import { getCurrentAuth } from "@/lib/auth";
 
 const navItems = [
   { href: "/", label: "Trang chủ" },
@@ -9,7 +12,9 @@ const navItems = [
   { href: "/submit", label: "Gửi ưu đãi" },
 ];
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const auth = await getCurrentAuth();
+
   return (
     <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -23,12 +28,25 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <Link
-          href="/login"
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-        >
-          Đăng nhập
-        </Link>
+        {auth ? (
+          <div className="flex items-center gap-3">
+            <span className="hidden max-w-48 truncate text-xs text-slate-500 sm:block">
+              {auth.email ?? "Đã đăng nhập"}
+            </span>
+            <form action={signOut}>
+              <button className="rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                Đăng xuất
+              </button>
+            </form>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            Đăng nhập
+          </Link>
+        )}
       </div>
     </header>
   );
