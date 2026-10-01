@@ -3,7 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BadgeCheck, CalendarDays } from "lucide-react";
 
+import { updateBookmark } from "@/app/saved/actions";
 import { OfferCard } from "@/components/offers/offer-card";
+import { getCurrentAuth } from "@/lib/auth";
+import { isOfferBookmarked } from "@/lib/queries/bookmarks";
 import { getOfferBySlug, getRelatedOffers } from "@/lib/queries/offers";
 
 export const dynamic = "force-dynamic";
@@ -62,10 +65,11 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
     notFound();
   }
 
-  const relatedOffers = await getRelatedOffers(
-    offer.id,
-    offer.category_id,
-  );
+  const [relatedOffers, auth] = await Promise.all([
+    getRelatedOffers(offer.id, offer.category_id),
+    getCurrentAuth(),
+  ]);
+  const bookmarked = auth ? await isOfferBookmarked(auth.id, offer.id) : false;
   const verifiedDate = formatVerifiedDate(offer.last_verified_at);
 
   return (
@@ -165,6 +169,28 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               Mở trang chính thức
               <ArrowUpRight className="size-4" aria-hidden="true" />
             </a>
+
+            {auth ? (
+              <form action={updateBookmark} className="mt-2">
+                <input type="hidden" name="offerId" value={offer.id} />
+                <input type="hidden" name="slug" value={offer.slug} />
+                <input
+                  type="hidden"
+                  name="intent"
+                  value={bookmarked ? "remove" : "save"}
+                />
+                <button className="w-full rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700">
+                  {bookmarked ? "Bỏ lưu" : "Lưu ưu đãi"}
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={`/login?next=${encodeURIComponent(`/offers/${offer.slug}`)}`}
+                className="mt-2 inline-flex w-full items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700"
+              >
+                Đăng nhập để lưu
+              </Link>
+            )}
 
             {verifiedDate ? (
               <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
