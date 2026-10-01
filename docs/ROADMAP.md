@@ -39,7 +39,7 @@ Work in small vertical slices. Every implementation slice must go through a pull
 
 ### In progress product slice
 
-- [ ] #19 Implement offer submission
+- [ ] #20 Define admin authorization model
 
 ### Recently completed product slices
 
@@ -47,10 +47,11 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #16 Build offer detail page
 - [x] #17 Implement Supabase authentication
 - [x] #18 Implement bookmarks
+- [x] #19 Implement offer submission
 
 ### Next product slice
 
-- [ ] #20 Define admin authorization model
+- [ ] #21 Production readiness pass
 
 ## 00 — Platform baseline
 
@@ -187,7 +188,7 @@ Issue: #18
 
 ## 09 — Submit offer
 
-Status: **In progress**
+Status: **Complete**
 
 Issue: #19
 
@@ -199,7 +200,7 @@ Issue: #19
 
 ## 10 — Admin authorization and moderation
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #20
 

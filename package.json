@@ -13,7 +13,8 @@
     "local:status": "supabase status",
     "db:reset": "supabase db reset --local",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
-    "db:schema:sync": "supabase db schema declarative sync --no-apply"
+    "db:schema:sync": "supabase db schema declarative sync --no-apply",
+    "db:test": "supabase test db"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

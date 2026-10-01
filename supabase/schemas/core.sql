@@ -83,17 +83,25 @@ create table if not exists public.submissions (
 create index if not exists submissions_submitter_user_id_idx
   on public.submissions(submitter_user_id);
 
+create table if not exists public.admin_memberships (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'admin' check (role = 'admin'),
+  created_at timestamptz not null default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.categories enable row level security;
 alter table public.offers enable row level security;
 alter table public.bookmarks enable row level security;
 alter table public.submissions enable row level security;
+alter table public.admin_memberships enable row level security;
 
 revoke all on table public.profiles from anon, authenticated;
 revoke all on table public.categories from anon, authenticated;
 revoke all on table public.offers from anon, authenticated;
 revoke all on table public.bookmarks from anon, authenticated;
 revoke all on table public.submissions from anon, authenticated;
+revoke all on table public.admin_memberships from anon, authenticated;
 
 grant select on table public.profiles to authenticated;
 grant update (display_name, avatar_url) on table public.profiles to authenticated;
@@ -102,6 +110,7 @@ grant select on table public.offers to anon, authenticated;
 grant select, insert, delete on table public.bookmarks to authenticated;
 grant insert on table public.submissions to anon, authenticated;
 grant select on table public.submissions to authenticated;
+grant select on table public.admin_memberships to authenticated;
 
 create policy "profiles_select_own"
 on public.profiles
@@ -167,3 +176,10 @@ on public.submissions
 for select
 to authenticated
 using ((select auth.uid()) = submitter_user_id);
+
+
+create policy "admin_memberships_select_own"
+on public.admin_memberships
+for select
+to authenticated
+using ((select auth.uid()) = user_id);

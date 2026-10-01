@@ -119,6 +119,9 @@ jobs:
       - name: Rebuild database from migrations and seed
         run: pnpm db:reset
 
+      - name: Test database authorization and RLS
+        run: pnpm db:test
+
       - name: Generate database types
         run: pnpm db:types
 
