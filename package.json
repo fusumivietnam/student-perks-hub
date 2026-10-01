@@ -37,7 +37,7 @@
     "postcss": "8.5.28",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "supabase": "2.117.0",
+    "supabase": "2.118.0",
     "@tailwindcss/postcss": "4.3.3"
   },
   "packageManager": "pnpm@12.8.1",
