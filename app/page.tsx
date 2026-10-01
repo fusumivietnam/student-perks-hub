@@ -1,19 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 
-const categories = [
-  "AI",
-  "Công cụ lập trình",
-  "Cloud & Hosting",
-  "Năng suất",
-  "Thiết kế",
-  "Học tập & Nghiên cứu",
-  "Bảo mật",
-  "Giải trí",
-  "Mua sắm",
-];
+import { CategoryCard } from "@/components/categories/category-card";
+import { getCategories } from "@/lib/queries/categories";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const categories = await getCategories();
+
   return (
     <>
       <section className="overflow-hidden border-b bg-gradient-to-br from-blue-50 via-white to-violet-50">
@@ -56,9 +51,18 @@ export default function HomePage() {
                 <p className="mt-2 text-white/80">Kiểm tra nguồn chính thức trước khi sử dụng.</p>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-white/10 p-3"><strong className="block text-xl">225+</strong><span className="text-xs">ưu đãi</span></div>
-                <div className="rounded-xl bg-white/10 p-3"><strong className="block text-xl">9</strong><span className="text-xs">danh mục</span></div>
-                <div className="rounded-xl bg-white/10 p-3"><strong className="block text-xl">1</strong><span className="text-xs">nguồn tin cậy</span></div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <strong className="block text-xl">Chính thức</strong>
+                  <span className="text-xs">nguồn ưu tiên</span>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <strong className="block text-xl">{categories.length}</strong>
+                  <span className="text-xs">danh mục</span>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <strong className="block text-xl">Thủ công</strong>
+                  <span className="text-xs">xác minh</span>
+                </div>
               </div>
             </div>
           </div>
@@ -76,14 +80,20 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <div key={category} className="rounded-2xl border bg-white p-5 shadow-sm">
-              <p className="font-semibold">{category}</p>
-              <p className="mt-1 text-sm text-slate-500">Dữ liệu sẽ được kết nối từ Supabase.</p>
-            </div>
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-dashed bg-slate-50 p-8 text-center">
+            <p className="font-semibold">Chưa có danh mục nào.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Danh mục sẽ xuất hiện sau khi dữ liệu được thêm vào hệ thống.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map((category) => (
+              <CategoryCard key={category.id} category={category} />
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
