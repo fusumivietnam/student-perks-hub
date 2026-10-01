@@ -1,0 +1,9 @@
+project_id = "student-perks-hub"
+
+[auth]
+enabled = true
+site_url = "env(SUPABASE_AUTH_SITE_URL)"
+additional_redirect_urls = ["env(SUPABASE_AUTH_SITE_URL)"]
+
+[experimental.pgdelta]
+enabled = true
