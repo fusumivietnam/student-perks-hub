@@ -1,0 +1,62 @@
+name: Repository Governance
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-governance
+  cancel-in-progress: false
+
+jobs:
+  configure:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          token: ${{ secrets.PROJECT_TOKEN }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Create and commit lockfile if missing
+        id: lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pnpm-lock.yaml ]]; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          pnpm install --lockfile-only
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: add pnpm lockfile"
+          git push origin HEAD:main
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Configure repository governance
+        if: steps.lockfile.outputs.created != 'true'
+        run: python3 .github/scripts/configure_repository.py
