@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "local:start": "node scripts/local-start.mjs",
+    "local:stop": "supabase stop",
+    "local:status": "supabase status",
+    "db:reset": "supabase db reset --local",
+    "db:types": "supabase gen types typescript --local > lib/database.types.ts",
+    "db:schema:sync": "supabase db schema declarative sync --no-apply"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -32,7 +38,8 @@
     "postcss": "8.5.6",
     "tailwindcss": "3.4.17",
     "tailwindcss-animate": "1.0.7",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "supabase": "2.117.0"
   },
   "packageManager": "pnpm@10.15.1"
 }
