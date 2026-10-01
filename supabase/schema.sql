@@ -10,7 +10,6 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   avatar_url text,
-  role text not null default 'user' check (role in ('user', 'admin')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -101,7 +100,8 @@ revoke all on table public.offers from anon, authenticated;
 revoke all on table public.bookmarks from anon, authenticated;
 revoke all on table public.submissions from anon, authenticated;
 
-grant select, update on table public.profiles to authenticated;
+grant select on table public.profiles to authenticated;
+grant update (display_name, avatar_url) on table public.profiles to authenticated;
 grant select on table public.categories to anon, authenticated;
 grant select on table public.offers to anon, authenticated;
 grant select, insert, delete on table public.bookmarks to authenticated;
