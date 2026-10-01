@@ -6,6 +6,7 @@ on:
       - "supabase/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "lib/database.types.ts"
       - ".github/workflows/database.yml"
   push:
     branches: [main]
@@ -60,8 +61,11 @@ jobs:
       - name: Rebuild database from migrations and seed
         run: pnpm db:reset
 
-      - name: Verify type generation
-        run: pnpm exec supabase gen types typescript --local > /tmp/database.types.ts
+      - name: Generate database types
+        run: pnpm db:types
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- lib/database.types.ts
 
       - name: Stop local Supabase
         if: always()
