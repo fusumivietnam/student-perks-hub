@@ -9,11 +9,12 @@ on:
       - "lib/database.types.ts"
       - ".github/workflows/database.yml"
   push:
-    branches: [main, feat/20-admin-authorization]
+    branches: [main]
     paths:
       - "supabase/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "lib/database.types.ts"
       - ".github/workflows/database.yml"
 
 permissions:
@@ -33,8 +34,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
-        with:
-          token: ${{ secrets.PROJECT_TOKEN }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6.1.0
@@ -69,24 +68,7 @@ jobs:
       - name: Generate database types
         run: pnpm db:types
 
-      - name: Bootstrap generated types on admin branch
-        if: github.ref == 'refs/heads/feat/20-admin-authorization'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add lib/database.types.ts pnpm-lock.yaml
-          if git diff --cached --quiet; then
-            echo "Generated files already match."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: refresh generated database types"
-          git pull --rebase origin feat/20-admin-authorization
-          git push origin HEAD:feat/20-admin-authorization
-
       - name: Verify generated types are committed
-        if: github.ref != 'refs/heads/feat/20-admin-authorization'
         run: git diff --exit-code -- lib/database.types.ts
 
       - name: Stop local Supabase
