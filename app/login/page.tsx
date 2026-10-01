@@ -76,22 +76,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           />
         </label>
 
-        <button className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
-          Đăng nhập
-        </button>
-      </form>
-
-      <form action={signUp} className="mt-4">
-        {next ? <input type="hidden" name="next" value={next} /> : null}
-        <input type="hidden" name="email" value="" />
-        <p className="text-sm text-slate-500">
-          Chưa có tài khoản? Điền email và mật khẩu ở form trên rồi dùng nút tạo
-          tài khoản bên dưới.
-        </p>
-        <p className="mt-2 text-xs text-slate-400">
-          Để tránh hai form nhập liệu trùng nhau, nút đăng ký riêng sẽ được bổ
-          sung khi UX auth được mở rộng.
-        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
+            Đăng nhập
+          </button>
+          <button
+            formAction={signUp}
+            className="rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700"
+          >
+            Tạo tài khoản
+          </button>
+        </div>
       </form>
     </section>
   );
