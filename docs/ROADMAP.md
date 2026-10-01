@@ -1,80 +1,180 @@
 # Implementation Roadmap
 
-Work in small vertical slices. Every slice must pass typecheck/lint and receive a Ponytail diff review.
+Last updated: 2026-10-02
 
-## 00 — Baseline
+Work in small vertical slices. Every implementation slice must go through a pull request, pass the required checks, and receive a Ponytail diff review.
 
-- Next.js App Router + TypeScript + Tailwind
-- Supabase SSR clients and proxy
-- shadcn registry configuration
-- design tokens and app shell
-- source database schema + RLS
-- agent guardrails
+## Current snapshot
 
-## 01 — Database connection
+### Completed foundation
 
-- select the intended Supabase project explicitly
-- turn supabase/schema.sql into a CLI-generated migration
-- apply migration
-- run Supabase security/performance advisors
-- generate database TypeScript types
-- configure repository environment locally/deployment-side without committing secrets
+- [x] Next.js App Router + TypeScript + Tailwind CSS 4 baseline
+- [x] Supabase SSR clients and auth proxy baseline
+- [x] local-first Supabase CLI + Docker workflow
+- [x] declarative database schema under `supabase/schemas/`
+- [x] versioned initial migration under `supabase/migrations/`
+- [x] deterministic category seed data
+- [x] RLS baseline for profiles, categories, offers, bookmarks, and submissions
+- [x] Node 24 LTS + pinned pnpm + committed `pnpm-lock.yaml`
+- [x] CI: install, typecheck, lint, build
+- [x] Database CI: local Supabase start, reset, seed, type generation
+- [x] CodeQL + Dependabot
+- [x] secret scanning + push protection
+- [x] protected `main` ruleset with squash-only PR flow
+- [x] GitHub Project #3 fields, views, and issue/PR synchronization
+- [x] repository governance automation
+
+### In progress
+
+- [ ] #7 Verify a fresh GitHub Codespace boot end to end
+- [ ] #10 Commit generated Supabase database types and enforce schema/type drift checks
+
+### Next product slice
+
+- [ ] #11 Render categories from Supabase
+- [ ] #12 Implement OfferCard
+- [ ] #13 Seed a small reviewed set of verified offers
+- [ ] #14 Build homepage offer sections
+
+## 00 — Platform baseline
+
+Status: **Complete**
+
+- Next.js App Router + TypeScript
+- Tailwind CSS 4 + shadcn registry configuration
+- design tokens and application shell
+- local Supabase development environment
+- Codespaces devcontainer
+- agent guardrails in `AGENTS.md`
+- reproducible dependency lockfile
+- GitHub Issues / Projects / PR workflow
+- CI, CodeQL, Dependabot, repository governance
+- protected `main` branch and squash-only merge policy
+
+Remaining verification:
+
+- fresh Codespace boot (#7)
+
+## 01 — Local database foundation
+
+Status: **In progress**
+
+Completed:
+
+- declarative schema is the source of truth
+- initial migration is committed
+- `pnpm db:reset` succeeds in Database CI
+- seed data is applied by a clean database rebuild
+- database migrations and RLS are verified on a local Supabase stack
+- issue #8 lockfile work is complete
+- issue #9 migration/seed verification is complete
+
+In progress:
+
+- generate and commit `lib/database.types.ts` from the repository Supabase CLI (#10)
+- make Database CI fail when committed types drift from the local schema
+
+Deferred until production is selected:
+
+- link a remote Supabase project
+- production migration deployment
+- remote database advisors / production configuration
+
+Local development must not depend on a remote Supabase project.
 
 ## 02 — Categories
 
-- focused query helper
-- render database categories on homepage and /categories
-- loading and empty states
-- no client fetch when server fetch is sufficient
+Status: **Next**
 
-## 03 — Offer card + seed data
+Issue: #11
+
+- one focused server-side query helper
+- generated Database types used by Supabase clients
+- homepage categories come from PostgreSQL
+- `/categories` comes from PostgreSQL
+- loading and empty states
+- no client fetch when a Server Component is sufficient
+
+## 03 — Offer card + verified seed data
+
+Status: **Planned**
+
+Issues: #12, #13
 
 - reusable OfferCard
-- reviewed seed offers linking to official sources
 - benefit badges
-- no scraped/copyright-copied content
+- small reviewed seed dataset
+- canonical official provider URLs only
+- summarized original descriptions; no scraped/copyright-copied text
 
 ## 04 — Homepage offers
 
-- featured
-- popular via deterministic database field/rank
-- recently published
+Status: **Planned**
+
+Issue: #14
+
+- featured offers
+- popular offers via a deterministic database field/rank
+- recently published offers
 - responsive grids
+- clear empty states
 
 ## 05 — Offers discovery
 
-- q, category, benefit type, audience, sort, page in URL search params
+Status: **Planned**
+
+Issue: #15
+
+- keyword, category, benefit type, audience, sort, and page in URL search params
 - server-side query
 - pagination
-- mobile filter sheet from shadcn
+- mobile filter UI using existing component primitives
+- no unnecessary global state
 
 ## 06 — Offer detail
 
-- /offers/[slug]
-- metadata
+Status: **Planned**
+
+Issue: #16
+
+- `/offers/[slug]`
+- generated metadata
 - eligibility
 - how to claim
-- official external link
+- safe official external link
 - related offers
-- notFound for invalid slug
+- `notFound()` for invalid slugs
 
 ## 07 — Authentication
 
+Status: **Planned**
+
+Issue: #17
+
 - Supabase Auth
-- validated server identity via current Supabase guidance
+- validated server identity using current Supabase guidance
 - login/logout
-- OAuth callback if enabled
-- no custom token handling
+- protected navigation state
+- OAuth callback only if a provider is explicitly enabled
+- no custom token/session implementation
 
 ## 08 — Bookmarks
 
+Status: **Planned**
+
+Issue: #18
+
 - authenticated-only
-- database is source of truth
+- database as source of truth
 - own-row RLS
-- save/unsave via Server Action
-- /saved reads server-side
+- save/unsave via focused Server Action
+- `/saved` rendered server-side
 
 ## 09 — Submit offer
+
+Status: **Planned**
+
+Issue: #19
 
 - Server Action
 - Zod validation
@@ -82,23 +182,76 @@ Work in small vertical slices. Every slice must pass typecheck/lint and receive 
 - clear success/error states
 - no direct publishing
 
-## 10 — Admin
+## 10 — Admin authorization and moderation
 
-Only after an authorization model is explicitly decided and tested.
+Status: **Planned**
+
+Issue: #20
+
+Authorization must be implemented and tested before admin CRUD.
 
 - server-side admin authorization
+- authorization state must not be user-editable metadata
 - review submissions
 - offer/category CRUD
 - publish/expire/archive
-
-Do not infer admin permission from client state or user-editable metadata.
+- explicit RLS implications and tests
 
 ## 11 — Production readiness
 
-- metadata/canonical/OG
+Status: **Planned**
+
+Issue: #21
+
+- metadata, canonical URLs, Open Graph
 - sitemap and robots
 - accessibility pass
 - critical Playwright flows
 - performance check
-- legal content
+- real legal content
+- Preview / Production GitHub Environments
 - deployment configuration
+- production database migration gate
+- release/tag strategy
+- no production secrets in the repository
+
+## Delivery order
+
+```text
+#7 Codespaces verification
+        ↓
+#10 Generated database types
+        ↓
+#11 Categories
+        ↓
+#12 OfferCard
+        ↓
+#13 Verified offer seed
+        ↓
+#14 Homepage offer sections
+        ↓
+#15 Offers discovery
+        ↓
+#16 Offer detail
+        ↓
+#17 Authentication
+        ↓
+#18 Bookmarks
+        ↓
+#19 Offer submission
+        ↓
+#20 Admin authorization/moderation
+        ↓
+#21 Production readiness
+```
+
+## Architecture guardrails
+
+- local development uses Supabase CLI/Docker; do not add a second PostgreSQL Docker stack
+- SQL migrations and declarative schemas remain portable PostgreSQL-first
+- no production provider is assumed until a production deployment decision is made
+- URL state before global client state
+- Server Components before client fetching where applicable
+- framework/native capability before adding dependencies
+- no unrelated refactors inside feature PRs
+- security, authorization, RLS, validation, accessibility, and data integrity are never simplified away
