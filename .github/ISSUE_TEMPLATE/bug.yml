@@ -1,0 +1,39 @@
+name: Bug
+description: Report one reproducible defect
+title: "[Bug] "
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Minimal steps to reproduce.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope constraints
+      value: |
+        Fix the defect with the smallest safe diff.
+        Do not refactor unrelated code.
+  - type: textarea
+    id: verify
+    attributes:
+      label: Verification
+      value: |
+        - [ ] Regression reproduced before fix
+        - [ ] Regression no longer reproduces
+        - [ ] pnpm typecheck
+        - [ ] pnpm lint
