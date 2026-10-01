@@ -1,0 +1,80 @@
+name: Project Sync
+
+on:
+  issues:
+    types: [opened, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: "Add all open repository issues to Project #3"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: project-sync-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_OWNER: fusumivietnam
+      PROJECT_NUMBER: "3"
+
+    steps:
+      - name: Verify project token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::Repository secret PROJECT_TOKEN is missing."
+            exit 1
+          fi
+          gh project view "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" >/dev/null
+
+      - name: Sync issue event
+        if: github.event_name == 'issues'
+        shell: bash
+        env:
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_STATE: ${{ github.event.issue.state }}
+        run: |
+          set -euo pipefail
+
+          gh project item-add "$PROJECT_NUMBER"             --owner "$PROJECT_OWNER"             --url "$ISSUE_URL" >/dev/null
+
+          STATUS="Todo"
+          if [[ "$ISSUE_STATE" == "closed" ]]; then
+            STATUS="Done"
+          fi
+
+          if ! gh project item-edit "$PROJECT_NUMBER"             --owner "$PROJECT_OWNER"             --url "$ISSUE_URL"             --field "Status"             --value "$STATUS" >/dev/null; then
+            echo "::warning::Issue was added to Project #$PROJECT_NUMBER, but Status='$STATUS' could not be set. Check the project's Status options."
+          fi
+
+      - name: Bootstrap open issues
+        if: github.event_name == 'workflow_dispatch' && inputs.bootstrap
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          gh issue list             --repo "$REPOSITORY"             --state open             --limit 200             --json url             --jq '.[].url' |
+          while IFS= read -r ISSUE_URL; do
+            [[ -z "$ISSUE_URL" ]] && continue
+
+            echo "Adding $ISSUE_URL"
+            gh project item-add "$PROJECT_NUMBER"               --owner "$PROJECT_OWNER"               --url "$ISSUE_URL" >/dev/null
+
+            if ! gh project item-edit "$PROJECT_NUMBER"               --owner "$PROJECT_OWNER"               --url "$ISSUE_URL"               --field "Status"               --value "Todo" >/dev/null; then
+              echo "::warning::$ISSUE_URL was added, but Status='Todo' could not be set."
+            fi
+          done
