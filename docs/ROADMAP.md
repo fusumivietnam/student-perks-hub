@@ -27,13 +27,14 @@ Work in small vertical slices. Every implementation slice must go through a pull
 ### In progress
 
 - [ ] #7 Verify a fresh GitHub Codespace boot end to end
-- [ ] #11 Render categories from Supabase
+- [ ] #12 Implement OfferCard
 
 ### Recently completed
 
 - [x] #8 Commit reproducible pnpm lockfile
 - [x] #9 Verify initial migration and seed through Database CI
 - [x] #10 Generate Supabase database types and enforce schema/type drift checks
+- [x] #11 Render categories from Supabase
 
 ### Next product slice
 
@@ -89,7 +90,7 @@ Local development must not depend on a remote Supabase project.
 
 ## 02 — Categories
 
-Status: **In progress**
+Status: **Complete**
 
 Issue: #11
 
@@ -102,7 +103,7 @@ Issue: #11
 
 ## 03 — Offer card + verified seed data
 
-Status: **Planned**
+Status: **In progress**
 
 Issues: #12, #13
 
