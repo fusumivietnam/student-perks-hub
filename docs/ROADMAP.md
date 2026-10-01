@@ -36,18 +36,15 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #12 Implement OfferCard
 - [x] #13 Seed a reviewed set of verified offers
 - [x] #14 Build homepage offer sections
-
-### In progress product slice
-
-- [ ] #20 Define admin authorization model
-
-### Recently completed product slices
-
 - [x] #15 Build offers discovery
 - [x] #16 Build offer detail page
 - [x] #17 Implement Supabase authentication
 - [x] #18 Implement bookmarks
 - [x] #19 Implement offer submission
+
+### In progress product slice
+
+- [ ] #20 Define admin authorization model
 
 ### Next product slice
 
