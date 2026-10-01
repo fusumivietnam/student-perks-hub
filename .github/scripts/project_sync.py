@@ -385,6 +385,26 @@ def ensure_views(login, project):
         print(f"created view: {name}")
 
 
+def cleanup_default_view(project):
+    managed = {"Current", "Backlog", "MVP", "By Area", "Review", "Done", "Roadmap"}
+    for view in project["views"]["nodes"]:
+        if not view or view["name"] in managed:
+            continue
+        if view["name"] != "View 1":
+            continue
+        graphql(
+            """
+            mutation DeleteView($view: ID!) {
+              deleteProjectV2View(input: {viewId: $view}) {
+                projectV2View { id }
+              }
+            }
+            """,
+            {"view": view["id"]},
+        )
+        print("deleted default view: View 1")
+
+
 def sync_event(project):
     if not EVENT_PATH or not os.path.exists(EVENT_PATH):
         return
@@ -428,6 +448,8 @@ def main():
         bootstrap_issues(project)
         project = refresh()
         ensure_views(login, project)
+        project = refresh()
+        cleanup_default_view(project)
 
     if EVENT_NAME in {"issues", "pull_request"}:
         sync_event(project)
