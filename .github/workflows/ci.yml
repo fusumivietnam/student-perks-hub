@@ -31,10 +31,17 @@ jobs:
         id: filter
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+
+          # A manual CI run is an explicit full verification request.
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
             changed_files="$(git show --pretty='' --name-only "${HEAD_SHA}")"
@@ -44,7 +51,7 @@ jobs:
 
           printf '%s\n' "${changed_files}"
 
-          if grep -Eq '^(supabase/|package\.json$|pnpm-lock\.yaml$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          if grep -Eq '^(supabase/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "database=true" >> "$GITHUB_OUTPUT"
           else
             echo "database=false" >> "$GITHUB_OUTPUT"
@@ -52,6 +59,52 @@ jobs:
 
   verify:
     name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.mjs', '**/*.ts', '**/*.tsx', '**/*.css') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+  database:
+    name: Database validation
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -75,46 +128,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build
-        run: pnpm build
-
-  database:
-    name: Database validation
-    needs: changes
-    if: needs.changes.outputs.database == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      SUPABASE_AUTH_SITE_URL: http://127.0.0.1:3000
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 12.8.1
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Start local Supabase
-        run: pnpm exec supabase start
+      - name: Start local Postgres
+        run: pnpm exec supabase db start
 
       - name: Rebuild database from migrations and seed
         run: pnpm db:reset
