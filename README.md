@@ -59,10 +59,9 @@ pnpm local:start
 pnpm dev
 ```
 
-Only the Next.js port (3000) is forwarded by default.
-
-The local Supabase API is deliberately **not** exposed as a public Codespaces
-port. Browser requests use the application's same-origin `/supabase/*` proxy,
+Next.js is forwarded on port 3000. Supabase Studio may be forwarded silently on
+port 54323 for development; the Supabase API itself is deliberately **not**
+exposed as a public Codespaces port. Browser requests use the application's same-origin `/supabase/*` proxy,
 while Server Components and the auth proxy connect directly to
 `127.0.0.1:54321` inside the Codespace.
 
@@ -93,5 +92,12 @@ For normal development:
 
 Remote Supabase linking and production deployment are intentionally separate from
 the local workflow.
+
+## Deployment
+
+Production hosting remains provider-neutral. Configure the canonical site URL and
+Supabase environment in the selected deployment platform rather than committing
+production values. See `docs/DEPLOYMENT.md` for required environment variables,
+database deployment checks, GitHub environment guidance, and rollback notes.
 
 See `AGENTS.md` for coding-agent rules and `docs/ROADMAP.md` for implementation order.
