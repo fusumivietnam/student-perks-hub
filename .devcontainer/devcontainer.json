@@ -21,5 +21,6 @@
         "dbaeumer.vscode-eslint"
       ]
     }
-  }
+  },
+  "postStartCommand": "pnpm local:start && (nohup pnpm dev > /tmp/student-perks-next.log 2>&1 &)"
 }
