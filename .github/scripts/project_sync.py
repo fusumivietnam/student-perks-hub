@@ -189,6 +189,7 @@ def ensure_status(project):
         ("In Progress", "YELLOW", "Implementation in progress"),
         ("Review", "PURPLE", "Pull request / review"),
         ("Done", "GREEN", "Completed"),
+        ("Cancelled", "GRAY", "Closed without merge"),
     ]
 
     inputs = []
@@ -356,13 +357,13 @@ def ensure_views(login, project):
     existing = {v["name"] for v in project["views"]["nodes"]}
 
     definitions = [
-        ("Current", "board", "-status:Done", [], [status_id] if status_id else []),
+        ("Current", "board", "-status:Done -status:Cancelled", [], [status_id] if status_id else []),
         ("Backlog", "table", "is:issue status:Backlog", [[priority_id, "asc"]] if priority_id else [], []),
-        ("MVP", "table", "is:issue target:MVP -status:Done", [[priority_id, "asc"]] if priority_id else [], []),
-        ("By Area", "table", "is:issue -status:Done", [[priority_id, "asc"]] if priority_id else [], [area_id] if area_id else []),
+        ("MVP", "table", "is:issue target:MVP -status:Done -status:Cancelled", [[priority_id, "asc"]] if priority_id else [], []),
+        ("By Area", "table", "is:issue -status:Done -status:Cancelled", [[priority_id, "asc"]] if priority_id else [], [area_id] if area_id else []),
         ("Review", "board", "is:pr status:Review", [], [status_id] if status_id else []),
         ("Done", "table", "status:Done", [], []),
-        ("Roadmap", "table", "is:issue -status:Done", [[priority_id, "asc"]] if priority_id else [], [target_id] if target_id else []),
+        ("Roadmap", "table", "is:issue -status:Done -status:Cancelled", [[priority_id, "asc"]] if priority_id else [], [target_id] if target_id else []),
     ]
 
     endpoint = f"users/{urllib.parse.quote(login)}/projectsV2/{PROJECT_NUMBER}/views"
@@ -424,7 +425,7 @@ def sync_event(project):
         item_id = item_for_content(project, pr["node_id"]) or add_item(project["id"], pr["node_id"])
         action = event.get("action")
         if action == "closed":
-            status = "Done"
+            status = "Done" if pr.get("merged") else "Cancelled"
         elif pr.get("draft"):
             status = "In Progress"
         else:
