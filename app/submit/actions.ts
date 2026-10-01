@@ -14,10 +14,10 @@ const submissionSchema = z.object({
     .trim()
     .url()
     .max(1000)
-    .refine((value) => {
-      const protocol = new URL(value).protocol;
-      return protocol === "https:" || protocol === "http:";
-    }),
+    .refine(
+      (value) => value.startsWith("https://") || value.startsWith("http://"),
+      "URL phải dùng http hoặc https.",
+    ),
   description: z.string().trim().max(3000).optional(),
   submitterNote: z.string().trim().max(1500).optional(),
 });
