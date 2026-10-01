@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { OfferCard } from "@/components/offers/offer-card";
@@ -5,6 +6,14 @@ import { getCategories } from "@/lib/queries/categories";
 import { getOfferDiscovery } from "@/lib/queries/offer-discovery";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Tất cả ưu đãi",
+  description: "Tìm và lọc các ưu đãi sinh viên đã được publish từ nguồn chính thức.",
+  alternates: { canonical: "/offers" },
+  openGraph: { url: "/offers", title: "Tất cả ưu đãi" },
+};
+
 
 type SearchParams = {
   q?: string | string[];
