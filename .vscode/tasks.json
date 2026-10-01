@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Local: start Supabase",
+      "type": "shell",
+      "command": "pnpm local:start",
+      "problemMatcher": []
+    },
+    {
+      "label": "Local: start Next.js",
+      "type": "shell",
+      "command": "pnpm dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: reset",
+      "type": "shell",
+      "command": "pnpm db:reset",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: generate types",
+      "type": "shell",
+      "command": "pnpm db:types",
+      "problemMatcher": []
+    }
+  ]
+}
