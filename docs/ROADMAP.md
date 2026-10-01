@@ -25,19 +25,17 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] GitHub Project #3 fields, views, and issue/PR synchronization
 - [x] repository governance automation
 
-### In progress
+### Independent platform verification
 
 - [ ] #7 Verify a fresh GitHub Codespace boot end to end
-- [ ] #14 Build homepage offer sections
 
-### Recently completed
+### Recently completed product slices
 
-- [x] #8 Commit reproducible pnpm lockfile
-- [x] #9 Verify initial migration and seed through Database CI
 - [x] #10 Generate Supabase database types and enforce schema/type drift checks
 - [x] #11 Render categories from Supabase
 - [x] #12 Implement OfferCard
 - [x] #13 Seed a reviewed set of verified offers
+- [x] #14 Build homepage offer sections
 
 ### Next product slice
 
@@ -115,7 +113,7 @@ Issues: #12, #13
 
 ## 04 — Homepage offers
 
-Status: **In progress**
+Status: **Complete**
 
 Issue: #14
 
@@ -226,8 +224,6 @@ Issue: #21
 ```text
 #7 Codespaces verification (independent platform check)
 
-#14 Homepage offer sections
-        ↓
 #15 Offers discovery
         ↓
 #16 Offer detail
