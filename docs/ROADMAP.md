@@ -37,9 +37,13 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #13 Seed a reviewed set of verified offers
 - [x] #14 Build homepage offer sections
 
-### Next product slice
+### In progress product slice
 
 - [ ] #15 Build offers discovery
+
+### Next product slice
+
+- [ ] #16 Build offer detail page
 
 ## 00 — Platform baseline
 
@@ -125,7 +129,7 @@ Issue: #14
 
 ## 05 — Offers discovery
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #15
 
