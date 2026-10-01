@@ -29,7 +29,6 @@ jobs:
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-      PROJECT_OWNER: "@me"
       PROJECT_NUMBER: "3"
 
     steps:
@@ -37,31 +36,60 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           if [[ -z "${GH_TOKEN:-}" ]]; then
             echo "::error::Repository secret PROJECT_TOKEN is missing."
             exit 1
           fi
-          gh project view "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" >/dev/null
+
+          PROJECT_ID="$(
+            gh api graphql               -f query='query($number:Int!){viewer{projectV2(number:$number){id}}}'               -F number="$PROJECT_NUMBER"               --jq '.data.viewer.projectV2.id'
+          )"
+
+          if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "null" ]]; then
+            echo "::error::PROJECT_TOKEN cannot access personal Project #$PROJECT_NUMBER."
+            exit 1
+          fi
+
+          echo "PROJECT_ID=$PROJECT_ID" >> "$GITHUB_ENV"
 
       - name: Sync issue event
         if: github.event_name == 'issues'
         shell: bash
         env:
-          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
           ISSUE_STATE: ${{ github.event.issue.state }}
         run: |
           set -euo pipefail
 
-          gh project item-add "$PROJECT_NUMBER"             --owner "$PROJECT_OWNER"             --url "$ISSUE_URL" >/dev/null
+          ITEM_ID="$(
+            gh api graphql               -f query='query($project:ID!,$content:ID!){node(id:$project){... on ProjectV2{items(first:100){nodes{id content{... on Issue{id}}}}}}}'               -f project="$PROJECT_ID"               -f content="$ISSUE_NODE_ID"               --jq '.data.node.items.nodes[] | select(.content.id == env.ISSUE_NODE_ID) | .id'               2>/dev/null || true
+          )"
 
-          STATUS="Todo"
+          if [[ -z "$ITEM_ID" ]]; then
+            ITEM_ID="$(
+              gh api graphql                 -f query='mutation($project:ID!,$content:ID!){addProjectV2ItemById(input:{projectId:$project,contentId:$content}){item{id}}}'                 -f project="$PROJECT_ID"                 -f content="$ISSUE_NODE_ID"                 --jq '.data.addProjectV2ItemById.item.id'
+            )"
+          fi
+
+          STATUS_NAME="Todo"
           if [[ "$ISSUE_STATE" == "closed" ]]; then
-            STATUS="Done"
+            STATUS_NAME="Done"
           fi
 
-          if ! gh project item-edit "$PROJECT_NUMBER"             --owner "$PROJECT_OWNER"             --url "$ISSUE_URL"             --field "Status"             --value "$STATUS" >/dev/null; then
-            echo "::warning::Issue was added to Project #$PROJECT_NUMBER, but Status='$STATUS' could not be set. Check the project's Status options."
+          FIELD_DATA="$(
+            gh api graphql               -f query='query($project:ID!){node(id:$project){... on ProjectV2{fields(first:100){nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}}}'               -f project="$PROJECT_ID"
+          )"
+
+          STATUS_FIELD_ID="$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id' <<<"$FIELD_DATA" | head -n1)"
+          STATUS_OPTION_ID="$(jq -r --arg name "$STATUS_NAME" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$name) | .id' <<<"$FIELD_DATA" | head -n1)"
+
+          if [[ -z "$STATUS_FIELD_ID" || -z "$STATUS_OPTION_ID" ]]; then
+            echo "::warning::Issue is in Project #$PROJECT_NUMBER, but Status='$STATUS_NAME' is not available."
+            exit 0
           fi
+
+          gh api graphql             -f query='mutation($project:ID!,$item:ID!,$field:ID!,$option:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}){projectV2Item{id}}}'             -f project="$PROJECT_ID"             -f item="$ITEM_ID"             -f field="$STATUS_FIELD_ID"             -f option="$STATUS_OPTION_ID" >/dev/null
 
       - name: Bootstrap open issues
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bootstrap)
@@ -71,14 +99,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          gh issue list             --repo "$REPOSITORY"             --state open             --limit 200             --json url             --jq '.[].url' |
-          while IFS= read -r ISSUE_URL; do
-            [[ -z "$ISSUE_URL" ]] && continue
+          FIELD_DATA="$(
+            gh api graphql               -f query='query($project:ID!){node(id:$project){... on ProjectV2{fields(first:100){nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}}}'               -f project="$PROJECT_ID"
+          )"
 
-            echo "Adding $ISSUE_URL"
-            gh project item-add "$PROJECT_NUMBER"               --owner "$PROJECT_OWNER"               --url "$ISSUE_URL" >/dev/null
+          STATUS_FIELD_ID="$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id' <<<"$FIELD_DATA" | head -n1)"
+          TODO_OPTION_ID="$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id' <<<"$FIELD_DATA" | head -n1)"
 
-            if ! gh project item-edit "$PROJECT_NUMBER"               --owner "$PROJECT_OWNER"               --url "$ISSUE_URL"               --field "Status"               --value "Todo" >/dev/null; then
-              echo "::warning::$ISSUE_URL was added, but Status='Todo' could not be set."
+          gh issue list             --repo "$REPOSITORY"             --state open             --limit 200             --json number,url             --jq '.[] | [.number,.url] | @tsv' |
+          while IFS=$'\t' read -r ISSUE_NUMBER ISSUE_URL; do
+            [[ -z "$ISSUE_NUMBER" ]] && continue
+
+            ISSUE_NODE_ID="$(
+              gh api "repos/$REPOSITORY/issues/$ISSUE_NUMBER" --jq '.node_id'
+            )"
+
+            ITEM_ID="$(
+              gh api graphql                 -f query='query($project:ID!){node(id:$project){... on ProjectV2{items(first:100){nodes{id content{... on Issue{id}}}}}}}'                 -f project="$PROJECT_ID"                 --jq '.data.node.items.nodes[] | select(.content.id == env.ISSUE_NODE_ID) | .id'                 2>/dev/null || true
+            )"
+
+            if [[ -z "$ITEM_ID" ]]; then
+              echo "Adding $ISSUE_URL"
+              ITEM_ID="$(
+                gh api graphql                   -f query='mutation($project:ID!,$content:ID!){addProjectV2ItemById(input:{projectId:$project,contentId:$content}){item{id}}}'                   -f project="$PROJECT_ID"                   -f content="$ISSUE_NODE_ID"                   --jq '.data.addProjectV2ItemById.item.id'
+              )"
+            fi
+
+            if [[ -n "$STATUS_FIELD_ID" && -n "$TODO_OPTION_ID" ]]; then
+              gh api graphql                 -f query='mutation($project:ID!,$item:ID!,$field:ID!,$option:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}){projectV2Item{id}}}'                 -f project="$PROJECT_ID"                 -f item="$ITEM_ID"                 -f field="$STATUS_FIELD_ID"                 -f option="$TODO_OPTION_ID" >/dev/null
             fi
           done
