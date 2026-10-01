@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
+
 import { CategoryCard } from "@/components/categories/category-card";
 import { getCategories } from "@/lib/queries/categories";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Danh mục ưu đãi",
+  description: "Khám phá ưu đãi sinh viên theo danh mục và nhu cầu.",
+  alternates: { canonical: "/categories" },
+  openGraph: { url: "/categories", title: "Danh mục ưu đãi" },
+};
+
 
 export default async function CategoriesPage() {
   const categories = await getCategories();
