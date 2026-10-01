@@ -13,8 +13,9 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] local-first Supabase CLI + Docker workflow
 - [x] declarative database schema under `supabase/schemas/`
 - [x] versioned initial migration under `supabase/migrations/`
-- [x] deterministic category seed data
+- [x] deterministic category and verified-offer seed data
 - [x] RLS baseline for profiles, categories, offers, bookmarks, and submissions
+- [x] generated Supabase database types + drift gate
 - [x] Node 24 LTS + pinned pnpm + committed `pnpm-lock.yaml`
 - [x] CI: install, typecheck, lint, build
 - [x] Database CI: local Supabase start, reset, seed, generated-type drift check
@@ -27,7 +28,7 @@ Work in small vertical slices. Every implementation slice must go through a pull
 ### In progress
 
 - [ ] #7 Verify a fresh GitHub Codespace boot end to end
-- [ ] #13 Seed a small reviewed set of verified offers
+- [ ] #14 Build homepage offer sections
 
 ### Recently completed
 
@@ -36,10 +37,11 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #10 Generate Supabase database types and enforce schema/type drift checks
 - [x] #11 Render categories from Supabase
 - [x] #12 Implement OfferCard
+- [x] #13 Seed a reviewed set of verified offers
 
 ### Next product slice
 
-- [ ] #14 Build homepage offer sections
+- [ ] #15 Build offers discovery
 
 ## 00 — Platform baseline
 
@@ -101,19 +103,19 @@ Issue: #11
 
 ## 03 — Offer card + verified seed data
 
-Status: **In progress**
+Status: **Complete**
 
 Issues: #12, #13
 
 - [x] reusable OfferCard
 - [x] benefit badges
-- [ ] small reviewed seed dataset
-- [ ] canonical official provider URLs only
-- [ ] summarized original descriptions; no scraped/copyright-copied text
+- [x] small reviewed seed dataset
+- [x] canonical official provider URLs only
+- [x] summarized original descriptions; no scraped/copyright-copied text
 
 ## 04 — Homepage offers
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #14
 
@@ -224,8 +226,6 @@ Issue: #21
 ```text
 #7 Codespaces verification (independent platform check)
 
-#13 Verified offer seed
-        ↓
 #14 Homepage offer sections
         ↓
 #15 Offers discovery
