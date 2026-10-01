@@ -11,3 +11,9 @@ out
 coverage
 supabase/.temp/
 supabase/.branches/
+
+# Understand Anything: keep the reusable graph/config, ignore local scratch data.
+.ua/intermediate/
+.ua/diff-overlay.json
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json
