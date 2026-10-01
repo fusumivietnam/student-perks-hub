@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, auth;
 
-select plan(5);
+select plan(7);
 
 select has_table(
   'public',
@@ -51,6 +51,16 @@ select is(
 select ok(
   not has_table_privilege('authenticated', 'public.admin_memberships', 'INSERT'),
   'authenticated users cannot self-provision admin membership'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.admin_memberships', 'UPDATE'),
+  'authenticated users cannot update admin membership'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.admin_memberships', 'DELETE'),
+  'authenticated users cannot delete admin membership'
 );
 
 select * from finish();
