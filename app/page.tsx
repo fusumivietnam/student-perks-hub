@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 
@@ -11,6 +12,12 @@ import {
 } from "@/lib/queries/offers";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: "/", title: "Student Perks Hub" },
+};
+
 
 type OfferSectionProps = {
   eyebrow: string;
