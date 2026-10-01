@@ -53,6 +53,126 @@ jobs:
 
           echo "PROJECT_ID=$PROJECT_ID" >> "$GITHUB_ENV"
 
+      - name: Ensure project fields and seed backlog metadata
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.bootstrap)
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          fields_json() {
+            gh api graphql               -f query='query($project:ID!){node(id:$project){... on ProjectV2{fields(first:100){nodes{... on ProjectV2FieldCommon{id name dataType} ... on ProjectV2SingleSelectField{id name dataType options{id name}}}}}}}'               -f project="$PROJECT_ID"
+          }
+
+          ensure_field() {
+            local name="$1"
+            local query="$2"
+            local fields
+            fields="$(fields_json)"
+
+            if jq -e --arg name "$name" '.data.node.fields.nodes[] | select(.name==$name)' <<<"$fields" >/dev/null; then
+              echo "Field '$name' already exists."
+              return
+            fi
+
+            echo "Creating field '$name'..."
+            gh api graphql -f query="$query" -f project="$PROJECT_ID" >/dev/null
+          }
+
+          ensure_field "Priority" 'mutation($project:ID!){createProjectV2Field(input:{projectId:$project,name:"Priority",dataType:SINGLE_SELECT,singleSelectOptions:[
+            {name:"P0",color:RED,description:"Critical / blocking"},
+            {name:"P1",color:ORANGE,description:"High priority"},
+            {name:"P2",color:YELLOW,description:"Normal priority"},
+            {name:"P3",color:GRAY,description:"Low priority"}
+          ]}){projectV2Field{... on ProjectV2SingleSelectField{id name}}}}'
+
+          ensure_field "Area" 'mutation($project:ID!){createProjectV2Field(input:{projectId:$project,name:"Area",dataType:SINGLE_SELECT,singleSelectOptions:[
+            {name:"Platform",color:BLUE,description:"Infrastructure, CI and developer experience"},
+            {name:"Database",color:PURPLE,description:"Schema, migrations and data"},
+            {name:"Offers",color:GREEN,description:"Offer discovery and content"},
+            {name:"Auth",color:YELLOW,description:"Authentication and user-owned data"},
+            {name:"Admin",color:RED,description:"Administration and authorization"},
+            {name:"UX",color:PINK,description:"User interface and experience"},
+            {name:"SEO",color:GRAY,description:"Search and metadata"}
+          ]}){projectV2Field{... on ProjectV2SingleSelectField{id name}}}}'
+
+          ensure_field "Target" 'mutation($project:ID!){createProjectV2Field(input:{projectId:$project,name:"Target",dataType:SINGLE_SELECT,singleSelectOptions:[
+            {name:"MVP",color:GREEN,description:"Required for initial release"},
+            {name:"Post-MVP",color:BLUE,description:"After initial release"}
+          ]}){projectV2Field{... on ProjectV2SingleSelectField{id name}}}}'
+
+          ensure_field "Size" 'mutation($project:ID!){createProjectV2Field(input:{projectId:$project,name:"Size",dataType:SINGLE_SELECT,singleSelectOptions:[
+            {name:"XS",color:GRAY,description:"Very small"},
+            {name:"S",color:GREEN,description:"Small"},
+            {name:"M",color:YELLOW,description:"Medium"},
+            {name:"L",color:ORANGE,description:"Large"}
+          ]}){projectV2Field{... on ProjectV2SingleSelectField{id name}}}}'
+
+          FIELDS="$(fields_json)"
+
+          field_id() {
+            jq -r --arg name "$1" '.data.node.fields.nodes[] | select(.name==$name) | .id' <<<"$FIELDS" | head -n1
+          }
+
+          option_id() {
+            local field="$1"
+            local option="$2"
+            jq -r --arg field "$field" --arg option "$option"               '.data.node.fields.nodes[] | select(.name==$field) | .options[] | select(.name==$option) | .id'               <<<"$FIELDS" | head -n1
+          }
+
+          set_single_select() {
+            local item_id="$1"
+            local field="$2"
+            local value="$3"
+            local fid oid
+            fid="$(field_id "$field")"
+            oid="$(option_id "$field" "$value")"
+
+            if [[ -z "$fid" || -z "$oid" ]]; then
+              echo "::warning::Cannot set $field='$value'; field or option is missing."
+              return
+            fi
+
+            gh api graphql               -f query='mutation($project:ID!,$item:ID!,$field:ID!,$option:String!){updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}){projectV2Item{id}}}'               -f project="$PROJECT_ID"               -f item="$item_id"               -f field="$fid"               -f option="$oid" >/dev/null
+          }
+
+          while IFS='|' read -r number priority area target size; do
+            [[ -z "$number" ]] && continue
+
+            ISSUE_NODE_ID="$(gh api "repos/$REPOSITORY/issues/$number" --jq '.node_id')"
+            ITEM_ID="$(
+              gh api graphql                 -f query='query($project:ID!){node(id:$project){... on ProjectV2{items(first:100){nodes{id content{... on Issue{id}}}}}}}'                 -f project="$PROJECT_ID"                 --jq '.data.node.items.nodes[] | select(.content.id == env.ISSUE_NODE_ID) | .id'                 2>/dev/null || true
+            )"
+
+            if [[ -z "$ITEM_ID" ]]; then
+              echo "::warning::Issue #$number is not in Project #$PROJECT_NUMBER; skipping metadata."
+              continue
+            fi
+
+            echo "Setting metadata for issue #$number"
+            set_single_select "$ITEM_ID" "Priority" "$priority"
+            set_single_select "$ITEM_ID" "Area" "$area"
+            set_single_select "$ITEM_ID" "Target" "$target"
+            set_single_select "$ITEM_ID" "Size" "$size"
+          done <<'MAP'
+          7|P0|Platform|MVP|S
+          8|P0|Platform|MVP|XS
+          9|P0|Database|MVP|S
+          10|P0|Database|MVP|XS
+          11|P1|Offers|MVP|S
+          12|P1|UX|MVP|S
+          13|P1|Database|MVP|M
+          14|P1|Offers|MVP|M
+          15|P1|Offers|MVP|L
+          16|P1|Offers|MVP|M
+          17|P1|Auth|MVP|M
+          18|P2|Auth|MVP|M
+          19|P2|Offers|MVP|M
+          20|P1|Admin|MVP|M
+          21|P1|Platform|MVP|L
+          MAP
+
       - name: Sync issue event
         if: github.event_name == 'issues'
         shell: bash
