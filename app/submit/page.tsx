@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
+
 import { submitOffer } from "@/app/submit/actions";
 import { getCurrentAuth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: "Gửi ưu đãi",
+  description: "Đề xuất một ưu đãi từ nguồn chính thức để được kiểm tra trước khi publish.",
+  alternates: { canonical: "/submit" },
+  openGraph: { url: "/submit", title: "Gửi ưu đãi" },
+};
 
 type SubmitPageProps = {
   searchParams: Promise<{
