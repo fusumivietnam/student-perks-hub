@@ -42,11 +42,11 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #18 Implement bookmarks
 - [x] #19 Implement offer submission
 
+### Recently completed security slice
+
+- [x] #20 Define admin authorization model
+
 ### In progress product slice
-
-- [ ] #20 Define admin authorization model
-
-### Next product slice
 
 - [ ] #21 Production readiness pass
 
@@ -197,7 +197,7 @@ Issue: #19
 
 ## 10 — Admin authorization and moderation
 
-Status: **In progress**
+Status: **Complete**
 
 Issue: #20
 
@@ -212,7 +212,7 @@ Authorization must be implemented and tested before admin CRUD.
 
 ## 11 — Production readiness
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #21
 
