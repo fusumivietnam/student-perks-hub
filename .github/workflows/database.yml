@@ -6,9 +6,10 @@ on:
       - "supabase/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "lib/database.types.ts"
       - ".github/workflows/database.yml"
   push:
-    branches: [main, chore/current-roadmap-db-types]
+    branches: [main]
     paths:
       - "supabase/**"
       - "package.json"
@@ -32,8 +33,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
-        with:
-          token: ${{ secrets.PROJECT_TOKEN }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6.1.0
@@ -65,21 +64,8 @@ jobs:
       - name: Generate database types
         run: pnpm db:types
 
-      - name: Commit generated types on bootstrap branch
-        if: github.ref == 'refs/heads/chore/current-roadmap-db-types'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add lib/database.types.ts
-          if git diff --cached --quiet; then
-            echo "Database types already match the local schema."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: generate Supabase database types"
-          git pull --rebase origin chore/current-roadmap-db-types
-          git push origin HEAD:chore/current-roadmap-db-types
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- lib/database.types.ts
 
       - name: Stop local Supabase
         if: always()
