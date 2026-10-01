@@ -1,0 +1,47 @@
+name: Feature
+description: One concrete vertical-slice implementation task
+title: "[Feature] "
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: State one concrete outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include only facts required to implement the task.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use a checklist with observable outcomes.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      value: |
+        - Follow AGENTS.md.
+        - Ponytail FULL.
+        - Reuse existing framework/repository patterns.
+        - Do not add dependencies without concrete justification.
+        - Do not refactor unrelated code.
+  - type: textarea
+    id: verify
+    attributes:
+      label: Verify
+      value: |
+        - [ ] pnpm typecheck
+        - [ ] pnpm lint
+        - [ ] pnpm build
+        - [ ] Relevant flow tested
