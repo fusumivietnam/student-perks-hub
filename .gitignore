@@ -9,3 +9,5 @@ out
 .DS_Store
 .vercel
 coverage
+supabase/.temp/
+supabase/.branches/
