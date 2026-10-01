@@ -112,7 +112,7 @@ def ruleset_payload():
                 "parameters": {
                     "do_not_enforce_on_create": True,
                     "required_status_checks": [
-                        {"context": "verify"},
+                        {"context": "CI Gate"},
                         {"context": "Analyze JavaScript/TypeScript"},
                     ],
                     "strict_required_status_checks_policy": True,

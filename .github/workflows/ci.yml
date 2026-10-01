@@ -4,16 +4,54 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      database: ${{ steps.filter.outputs.database }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect database-related changes
+        id: filter
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            changed_files="$(git show --pretty='' --name-only "${HEAD_SHA}")"
+          else
+            changed_files="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+          fi
+
+          printf '%s\n' "${changed_files}"
+
+          if grep -Eq '^(supabase/|package\.json$|pnpm-lock\.yaml$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
+    name: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -31,16 +69,11 @@ jobs:
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        shell: bash
-        run: |
-          if [[ -f pnpm-lock.yaml ]]; then
-            pnpm install --frozen-lockfile
-          else
-            echo "::warning::pnpm-lock.yaml is missing; installing without frozen lockfile"
-            pnpm install --no-frozen-lockfile
-          fi
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm typecheck
@@ -50,3 +83,72 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  database:
+    name: Database validation
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_AUTH_SITE_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start local Supabase
+        run: pnpm exec supabase start
+
+      - name: Rebuild database from migrations and seed
+        run: pnpm db:reset
+
+      - name: Test database authorization and RLS
+        run: pnpm db:test
+
+      - name: Generate database types
+        run: pnpm db:types
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- lib/database.types.ts
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
+
+  gate:
+    name: CI Gate
+    needs: [changes, verify, database]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate required CI results
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          DATABASE_RESULT: ${{ needs.database.result }}
+        run: |
+          set -euo pipefail
+
+          [[ "${CHANGES_RESULT}" == "success" ]]
+          [[ "${VERIFY_RESULT}" == "success" ]]
+          [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
