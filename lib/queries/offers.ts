@@ -141,3 +141,22 @@ export async function getRelatedOffers(
 
   return data;
 }
+
+
+export async function getPublishedOfferSitemapEntries() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("offers")
+    .select("slug, updated_at")
+    .eq("status", "published")
+    .order("slug")
+    .limit(1000);
+
+  if (error) {
+    console.error("Failed to load offer sitemap entries", error);
+    throw new Error("Could not load offer sitemap entries");
+  }
+
+  return data;
+}
