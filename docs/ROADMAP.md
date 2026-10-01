@@ -39,11 +39,15 @@ Work in small vertical slices. Every implementation slice must go through a pull
 
 ### In progress product slice
 
-- [ ] #15 Build offers discovery
+- [ ] #16 Build offer detail page
+
+### Recently completed product slice
+
+- [x] #15 Build offers discovery
 
 ### Next product slice
 
-- [ ] #16 Build offer detail page
+- [ ] #17 Implement Supabase authentication
 
 ## 00 — Platform baseline
 
@@ -129,7 +133,7 @@ Issue: #14
 
 ## 05 — Offers discovery
 
-Status: **In progress**
+Status: **Complete**
 
 Issue: #15
 
@@ -141,7 +145,7 @@ Issue: #15
 
 ## 06 — Offer detail
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #16
 

@@ -73,3 +73,71 @@ export async function getRecentOffers(limit = 3) {
 
   return data;
 }
+
+
+export async function getOfferBySlug(slug: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("offers")
+    .select(`
+      id,
+      slug,
+      title,
+      provider,
+      summary,
+      description,
+      official_url,
+      logo_url,
+      category_id,
+      benefit_type,
+      benefit_text,
+      eligibility,
+      how_to_claim,
+      audience,
+      tags,
+      last_verified_at,
+      published_at,
+      category:categories (
+        name,
+        slug
+      )
+    `)
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load offer", error);
+    throw new Error("Could not load offer");
+  }
+
+  return data;
+}
+
+export async function getRelatedOffers(
+  offerId: string,
+  categoryId: string | null,
+  limit = 3,
+) {
+  if (!categoryId) return [];
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("offers")
+    .select(offerCardSelect)
+    .eq("status", "published")
+    .eq("category_id", categoryId)
+    .neq("id", offerId)
+    .order("published_at", { ascending: false })
+    .order("title")
+    .limit(limit);
+
+  if (error) {
+    console.error("Failed to load related offers", error);
+    throw new Error("Could not load related offers");
+  }
+
+  return data;
+}
