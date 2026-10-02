@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { OfferCard } from "@/components/offers/offer-card";
 import { getCurrentAuth } from "@/lib/auth";
 import { getSavedOffers } from "@/lib/queries/bookmarks";
+
+export const metadata: Metadata = {
+  title: "Ưu đãi đã lưu",
+  robots: { index: false, follow: false },
+};
 
 export const dynamic = "force-dynamic";
 

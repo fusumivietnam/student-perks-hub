@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { signIn, signUp } from "@/app/login/actions";
 import { getCurrentAuth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: "Đăng nhập",
+  robots: { index: false, follow: false },
+};
 
 type LoginPageProps = {
   searchParams: Promise<{

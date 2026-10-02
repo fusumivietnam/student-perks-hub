@@ -48,12 +48,28 @@ export async function generateMetadata({
   if (!offer) {
     return {
       title: "Không tìm thấy ưu đãi",
+      robots: { index: false, follow: false },
     };
   }
 
+  const canonical = `/offers/${offer.slug}`;
+  const title = `${offer.title} — ${offer.provider}`;
+
   return {
-    title: `${offer.title} — ${offer.provider}`,
+    title,
     description: offer.summary,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      url: canonical,
+      title,
+      description: offer.summary,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: offer.summary,
+    },
   };
 }
 
