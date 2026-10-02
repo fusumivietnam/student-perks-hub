@@ -26,6 +26,7 @@ Preview must use non-production credentials and non-production data.
 
 Required configuration:
 
+- `NEXT_PUBLIC_SITE_URL` — absolute public URL for canonical metadata, sitemap, and robots
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - optional `SUPABASE_INTERNAL_URL` when the hosting topology needs a private server-side endpoint
@@ -35,6 +36,8 @@ Preview deployments must not reuse the production service-role key or production
 ## Production
 
 Production deployment requires:
+
+- `NEXT_PUBLIC_SITE_URL` must be set to the canonical production origin.
 
 1. CI Gate and CodeQL green on the exact commit.
 2. Reviewed database migrations.
