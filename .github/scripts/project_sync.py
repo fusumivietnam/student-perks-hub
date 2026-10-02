@@ -587,6 +587,17 @@ def main():
     project = refresh()
 
     setup_event = EVENT_NAME in {"push", "workflow_dispatch"}
+    if EVENT_NAME == "pull_request" and EVENT_PATH and os.path.exists(EVENT_PATH):
+        with open(EVENT_PATH, "r", encoding="utf-8") as fh:
+            setup_payload = json.load(fh)
+        setup_event = (
+            setup_event
+            or (
+                setup_payload.get("action") == "closed"
+                and setup_payload.get("pull_request", {}).get("merged") is True
+            )
+        )
+
     if setup_event:
         ensure_repository_labels()
         ensure_milestones()
