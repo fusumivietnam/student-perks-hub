@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { OfferCard } from "@/components/offers/offer-card";
 import { getCategories } from "@/lib/queries/categories";
 import { getOfferDiscovery } from "@/lib/queries/offer-discovery";
+
+export const metadata: Metadata = {
+  title: "Tất cả ưu đãi",
+  description: "Tìm và lọc các chương trình ưu đãi dành cho sinh viên đã được publish.",
+  alternates: { canonical: "/offers" },
+};
 
 export const dynamic = "force-dynamic";
 
