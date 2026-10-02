@@ -41,11 +41,8 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #17 Implement Supabase authentication
 - [x] #18 Implement bookmarks
 - [x] #19 Implement offer submission
-
 - [x] #20 Define admin authorization model
 - [x] #43 Add critical browser E2E release gate
-
-### Recently completed product slices
 
 - [x] #49 Implement admin moderation console and admin RLS
 
