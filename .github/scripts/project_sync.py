@@ -50,6 +50,43 @@ FIELD_DEFINITIONS = {
     ],
 }
 
+LABEL_DEFINITIONS = {
+    "type:feature": ("1D76DB", "New product capability"),
+    "type:bug": ("D73A4A", "Reproducible defect"),
+    "type:chore": ("6A737D", "Maintenance or repository work"),
+    "type:docs": ("0075CA", "Documentation"),
+    "area:platform": ("0E8A16", "Infrastructure, CI and developer experience"),
+    "area:database": ("5319E7", "Schema, migrations and data"),
+    "area:offers": ("2DA44E", "Offer discovery and content"),
+    "area:auth": ("FBCA04", "Authentication and user-owned data"),
+    "area:admin": ("B60205", "Administration and authorization"),
+    "area:ux": ("D876E3", "User interface and experience"),
+    "area:seo": ("6A737D", "Search and metadata"),
+    "risk:security": ("B60205", "Security-sensitive change; human review required"),
+    "risk:migration": ("D93F0B", "Database/data migration risk"),
+    "risk:breaking": ("B60205", "Potentially breaking behavior or interface"),
+    "agent:ready": ("0969DA", "Scoped and ready for an implementation agent"),
+    "needs:human": ("B60205", "Requires explicit human decision or review"),
+    "needs:design": ("C5DEF5", "Requires design direction before implementation"),
+}
+
+MILESTONE_DEFINITIONS = {
+    "MVP": "Minimum viable product release scope.",
+    "Private Beta": "Private beta readiness and feedback fixes.",
+    "Public Beta": "Public beta readiness, reliability and polish.",
+    "v1.0": "First stable public release.",
+}
+
+AREA_LABEL_TO_FIELD = {
+    "area:platform": "Platform",
+    "area:database": "Database",
+    "area:offers": "Offers",
+    "area:auth": "Auth",
+    "area:admin": "Admin",
+    "area:ux": "UX",
+    "area:seo": "SEO",
+}
+
 BACKLOG = {
     7: ("P0", "Platform", "MVP", "S"),
     8: ("P0", "Platform", "MVP", "XS"),
@@ -136,6 +173,91 @@ query Project($number: Int!) {
   }
 }
 """
+
+
+def ensure_repository_labels():
+    labels = rest("GET", f"repos/{REPOSITORY}/labels?per_page=100")
+    existing = {label["name"]: label for label in labels}
+
+    for name, (color, description) in LABEL_DEFINITIONS.items():
+        current = existing.get(name)
+        payload = {"name": name, "color": color, "description": description}
+        if not current:
+            rest("POST", f"repos/{REPOSITORY}/labels", payload)
+            print(f"created label: {name}")
+            continue
+
+        if current.get("color", "").upper() != color or current.get("description", "") != description:
+            encoded = urllib.parse.quote(name, safe="")
+            rest("PATCH", f"repos/{REPOSITORY}/labels/{encoded}", payload)
+            print(f"updated label: {name}")
+
+
+def ensure_milestones():
+    milestones = rest("GET", f"repos/{REPOSITORY}/milestones?state=all&per_page=100")
+    existing = {milestone["title"]: milestone for milestone in milestones}
+
+    for title, description in MILESTONE_DEFINITIONS.items():
+        current = existing.get(title)
+        if not current:
+            rest(
+                "POST",
+                f"repos/{REPOSITORY}/milestones",
+                {"title": title, "description": description},
+            )
+            print(f"created milestone: {title}")
+            continue
+
+        if current.get("description", "") != description:
+            rest(
+                "PATCH",
+                f"repos/{REPOSITORY}/milestones/{current['number']}",
+                {"description": description},
+            )
+            print(f"updated milestone: {title}")
+
+
+def milestone_number(title):
+    milestones = rest("GET", f"repos/{REPOSITORY}/milestones?state=all&per_page=100")
+    milestone = next((item for item in milestones if item["title"] == title), None)
+    return milestone["number"] if milestone else None
+
+
+def issue_label_names(issue):
+    return {
+        label["name"] if isinstance(label, dict) else label
+        for label in issue.get("labels", [])
+    }
+
+
+def sync_issue_area(project, item_id, issue):
+    labels = issue_label_names(issue)
+    for label, area in AREA_LABEL_TO_FIELD.items():
+        if label in labels:
+            set_select(project, item_id, "Area", area)
+            return
+
+
+def sync_issue_routing(project, item_id, issue, action, changed_label=None):
+    labels = issue_label_names(issue)
+    blocked = bool({"needs:human", "needs:design"} & labels)
+
+    if action == "closed":
+        set_select(project, item_id, "Status", "Done")
+    elif action in {"opened", "reopened"}:
+        set_select(
+            project,
+            item_id,
+            "Status",
+            "Ready" if "agent:ready" in labels and not blocked else "Backlog",
+        )
+    elif action == "labeled":
+        if changed_label == "agent:ready" and not blocked:
+            set_select(project, item_id, "Status", "Ready")
+        elif changed_label in {"needs:human", "needs:design"}:
+            set_select(project, item_id, "Status", "Backlog")
+    elif action == "unlabeled" and changed_label == "agent:ready":
+        set_select(project, item_id, "Status", "Backlog")
 
 
 def project_state():
@@ -332,16 +454,35 @@ def ensure_issue_item(project, issue):
 def bootstrap_issues(project):
     issues = rest("GET", f"repos/{REPOSITORY}/issues?state=open&per_page=100")
     by_number = {i["number"]: i for i in issues if "pull_request" not in i}
+    mvp_milestone = milestone_number("MVP")
+
     for number, metadata in BACKLOG.items():
         issue = by_number.get(number)
         if not issue:
             continue
+
         item_id = ensure_issue_item(project, issue)
         priority, area, target, size = metadata
         set_select(project, item_id, "Priority", priority)
         set_select(project, item_id, "Area", area)
         set_select(project, item_id, "Target", target)
         set_select(project, item_id, "Size", size)
+
+        area_label = f"area:{area.lower()}"
+        current_labels = issue_label_names(issue)
+        if area_label in LABEL_DEFINITIONS and area_label not in current_labels:
+            rest(
+                "POST",
+                f"repos/{REPOSITORY}/issues/{number}/labels",
+                {"labels": [area_label]},
+            )
+
+        if target == "MVP" and mvp_milestone and not issue.get("milestone"):
+            rest(
+                "PATCH",
+                f"repos/{REPOSITORY}/issues/{number}",
+                {"milestone": mvp_milestone},
+            )
 
 
 def ensure_views(login, project):
@@ -416,8 +557,9 @@ def sync_event(project):
         issue = event["issue"]
         item_id = ensure_issue_item(project, issue)
         action = event.get("action")
-        status = "Done" if action == "closed" else "Backlog"
-        set_select(project, item_id, "Status", status)
+        changed_label = (event.get("label") or {}).get("name")
+        sync_issue_area(project, item_id, issue)
+        sync_issue_routing(project, item_id, issue, action, changed_label)
         return
 
     if EVENT_NAME == "pull_request":
@@ -446,6 +588,8 @@ def main():
 
     setup_event = EVENT_NAME in {"push", "workflow_dispatch"}
     if setup_event:
+        ensure_repository_labels()
+        ensure_milestones()
         bootstrap_issues(project)
         project = refresh()
         ensure_views(login, project)
