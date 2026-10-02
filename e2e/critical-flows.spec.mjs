@@ -2,17 +2,23 @@ import { expect, test } from "@playwright/test";
 
 const testEmail = process.env.E2E_TEST_EMAIL;
 const testPassword = process.env.E2E_TEST_PASSWORD;
+const adminEmail = process.env.E2E_ADMIN_EMAIL;
+const adminPassword = process.env.E2E_ADMIN_PASSWORD;
 
-async function login(page) {
-  if (!testEmail || !testPassword) {
+async function loginWith(page, email, password) {
+  if (!email || !password) {
     throw new Error("E2E test credentials are missing.");
   }
 
   await page.goto("/login");
-  await page.getByLabel("Email").fill(testEmail);
-  await page.getByLabel("Mật khẩu").fill(testPassword);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Mật khẩu").fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+}
+
+async function login(page) {
+  await loginWith(page, testEmail, testPassword);
 }
 
 test("anonymous discovery reaches a verified offer detail", async ({ page }) => {
@@ -110,4 +116,37 @@ test("offer submission stays pending after browser submission", async ({
   const rows = await response.json();
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ title, status: "pending" });
+});
+
+
+test("regular authenticated user cannot access admin console", async ({ page }) => {
+  await login(page);
+
+  const response = await page.goto("/admin");
+  expect(response?.status()).toBe(404);
+});
+
+test("admin can review a pending submission", async ({ page }) => {
+  const title = `E2E Admin Review ${Date.now()}`;
+
+  await page.goto("/submit");
+  await page.getByLabel("Nhà cung cấp").fill("Admin Review Provider");
+  await page.getByLabel("Tên ưu đãi").fill(title);
+  await page
+    .getByLabel("Link chính thức")
+    .fill("https://example.com/admin-review");
+  await page.getByRole("button", { name: "Gửi đề xuất" }).click();
+  await expect(page).toHaveURL(/\/submit\?success=1/);
+
+  await loginWith(page, adminEmail, adminPassword);
+  await page.goto("/admin");
+
+  await expect(
+    page.getByRole("heading", { name: "Moderation console" }),
+  ).toBeVisible();
+
+  const submission = page.locator("article").filter({ hasText: title });
+  await expect(submission).toBeVisible();
+  await submission.getByRole("button", { name: "Approve" }).click();
+  await expect(submission.getByText("approved")).toBeVisible();
 });

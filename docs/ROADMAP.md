@@ -42,9 +42,12 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #18 Implement bookmarks
 - [x] #19 Implement offer submission
 
+- [x] #20 Define admin authorization model
+- [x] #43 Add critical browser E2E release gate
+
 ### In progress product slice
 
-- [ ] #20 Define admin authorization model
+- [ ] #49 Implement admin moderation console and admin RLS
 
 ### Next product slice
 
@@ -199,16 +202,21 @@ Issue: #19
 
 Status: **In progress**
 
-Issue: #20
+Issues: #20, #49
 
-Authorization must be implemented and tested before admin CRUD.
+Authorization foundation completed:
 
-- server-side admin authorization
-- authorization state must not be user-editable metadata
-- review submissions
-- offer/category CRUD
-- publish/expire/archive
-- explicit RLS implications and tests
+- [x] server-side admin authorization
+- [x] authorization state is stored in protected `admin_memberships`, not user-editable metadata
+- [x] own-membership RLS and authorization tests
+
+Moderation slice (#49):
+
+- [ ] admin-only RLS for submissions, offers, and categories
+- [ ] review submissions
+- [ ] offer/category CRUD
+- [ ] publish/expire/archive
+- [ ] admin browser authorization/moderation coverage
 
 ## 11 — Production readiness
 
@@ -231,7 +239,7 @@ Remaining before first production release:
 - [ ] metadata, canonical URLs, Open Graph
 - [ ] sitemap and robots
 - [ ] accessibility pass and automated gate
-- [ ] critical browser E2E flows
+- [x] critical browser E2E flows
 - [ ] performance budget/check
 - [ ] final legal/privacy content review
 - [ ] application hosting provider decision
@@ -261,7 +269,9 @@ Remaining before first production release:
         ↓
 #19 Offer submission
         ↓
-#20 Admin authorization/moderation
+#20 Admin authorization
+        ↓
+#49 Admin moderation
         ↓
 #21 Production readiness
 ```
