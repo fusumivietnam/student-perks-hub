@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { CategoryCard } from "@/components/categories/category-card";
 import { getCategories } from "@/lib/queries/categories";
+
+export const metadata: Metadata = {
+  title: "Danh mục ưu đãi",
+  description: "Khám phá ưu đãi dành cho sinh viên theo từng nhóm nhu cầu.",
+  alternates: { canonical: "/categories" },
+};
 
 export const dynamic = "force-dynamic";
 
