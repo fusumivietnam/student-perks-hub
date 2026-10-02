@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       database: ${{ steps.filter.outputs.database }}
+      e2e: ${{ steps.filter.outputs.e2e }}
 
     steps:
       - name: Checkout
@@ -27,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect database-related changes
+      - name: Detect validation scope
         id: filter
         shell: bash
         env:
@@ -40,6 +41,7 @@ jobs:
           # A manual CI run is an explicit full verification request.
           if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
             echo "database=true" >> "$GITHUB_OUTPUT"
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -55,6 +57,12 @@ jobs:
             echo "database=true" >> "$GITHUB_OUTPUT"
           else
             echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-(setup|start)\.mjs$|playwright\.config\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
           fi
 
   verify:
@@ -147,9 +155,86 @@ jobs:
         if: always()
         run: pnpm exec supabase stop --no-backup
 
+  e2e:
+    name: Browser E2E
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      PLAYWRIGHT_VERSION: "1.63.0"
+      SUPABASE_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install repository dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install pinned Playwright test runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "@playwright/test@${PLAYWRIGHT_VERSION}"
+          git checkout -- package.json
+
+      - name: Restore Chromium cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.63.0-chromium
+
+      - name: Install Chromium system dependencies
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Start minimal local Supabase
+        run: node scripts/e2e-start.mjs
+
+      - name: Rebuild deterministic database
+        run: pnpm db:reset
+
+      - name: Create deterministic E2E user
+        run: node scripts/e2e-setup.mjs
+
+      - name: Run critical browser flows
+        run: pnpm exec playwright test
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: playwright-failure-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm local:stop
+
   gate:
     name: CI Gate
-    needs: [changes, verify, database]
+    needs: [changes, verify, database, e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -161,9 +246,11 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           VERIFY_RESULT: ${{ needs.verify.result }}
           DATABASE_RESULT: ${{ needs.database.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
           set -euo pipefail
 
           [[ "${CHANGES_RESULT}" == "success" ]]
           [[ "${VERIFY_RESULT}" == "success" ]]
           [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
+          [[ "${E2E_RESULT}" == "success" || "${E2E_RESULT}" == "skipped" ]]
