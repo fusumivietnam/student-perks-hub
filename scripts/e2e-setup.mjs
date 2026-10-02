@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 
 const email = "e2e@student-perks.local";
 const password = "Playwright-E2E-2026!";
+const adminEmail = "admin-e2e@student-perks.local";
 
 const status = spawnSync(
   "pnpm",
@@ -51,29 +52,59 @@ if (!usersResponse.ok) {
 }
 
 const usersPayload = await usersResponse.json();
-const existing = (usersPayload.users ?? []).find((user) => user.email === email);
-
-if (existing) {
-  const deleteResponse = await fetch(
-    `${apiUrl}/auth/v1/admin/users/${existing.id}`,
-    { method: "DELETE", headers: adminHeaders },
+async function recreateUser(userEmail) {
+  const existing = (usersPayload.users ?? []).find(
+    (user) => user.email === userEmail,
   );
 
-  if (!deleteResponse.ok) {
-    throw new Error(`Could not reset E2E user: ${deleteResponse.status}`);
+  if (existing) {
+    const deleteResponse = await fetch(
+      `${apiUrl}/auth/v1/admin/users/${existing.id}`,
+      { method: "DELETE", headers: adminHeaders },
+    );
+
+    if (!deleteResponse.ok) {
+      throw new Error(
+        `Could not reset E2E user: ${deleteResponse.status}`,
+      );
+    }
   }
+
+  const createResponse = await fetch(`${apiUrl}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: adminHeaders,
+    body: JSON.stringify({ email: userEmail, password, email_confirm: true }),
+  });
+
+  if (!createResponse.ok) {
+    const detail = await createResponse.text();
+    throw new Error(
+      `Could not create E2E user: ${createResponse.status} ${detail}`,
+    );
+  }
+
+  return createResponse.json();
 }
 
-const createResponse = await fetch(`${apiUrl}/auth/v1/admin/users`, {
-  method: "POST",
-  headers: adminHeaders,
-  body: JSON.stringify({ email, password, email_confirm: true }),
-});
+await recreateUser(email);
+const adminUser = await recreateUser(adminEmail);
 
-if (!createResponse.ok) {
-  const detail = await createResponse.text();
+const membershipResponse = await fetch(
+  `${apiUrl}/rest/v1/admin_memberships`,
+  {
+    method: "POST",
+    headers: {
+      ...adminHeaders,
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ user_id: adminUser.id, role: "admin" }),
+  },
+);
+
+if (!membershipResponse.ok) {
+  const detail = await membershipResponse.text();
   throw new Error(
-    `Could not create E2E user: ${createResponse.status} ${detail}`,
+    `Could not create E2E admin membership: ${membershipResponse.status} ${detail}`,
   );
 }
 
@@ -85,9 +116,11 @@ if (process.env.GITHUB_ENV) {
       `E2E_SERVICE_ROLE_KEY=${serviceKey}`,
       `E2E_TEST_EMAIL=${email}`,
       `E2E_TEST_PASSWORD=${password}`,
+      `E2E_ADMIN_EMAIL=${adminEmail}`,
+      `E2E_ADMIN_PASSWORD=${password}`,
       "",
     ].join("\n"),
   );
 }
 
-console.log("E2E test user is ready.");
+console.log("E2E test users are ready.");
