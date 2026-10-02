@@ -1,6 +1,7 @@
 name: Bug
 description: Report one reproducible defect
 title: "[Bug] "
+labels: ["type:bug"]
 body:
   - type: textarea
     id: observed
