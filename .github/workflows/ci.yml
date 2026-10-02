@@ -165,6 +165,7 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       PLAYWRIGHT_VERSION: "1.63.0"
       AXE_PLAYWRIGHT_VERSION: "4.13.0"
+      LHCI_VERSION: "0.15.1"
       SUPABASE_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -191,7 +192,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false             "@playwright/test@${PLAYWRIGHT_VERSION}"             "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}"
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false \
+            "@playwright/test@${PLAYWRIGHT_VERSION}" \
+            "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}" \
+            "@lhci/cli@${LHCI_VERSION}"
           git checkout -- package.json
 
       - name: Restore Chromium cache
@@ -215,8 +219,29 @@ jobs:
       - name: Create deterministic E2E user
         run: node scripts/e2e-setup.mjs
 
+      - name: Restore Next.js production build cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('app/**/*', 'components/**/*', 'lib/**/*', 'next.config.*') }}
+          restore-keys: |
+            ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build production application
+        run: pnpm build
+
       - name: Run critical browser flows
         run: pnpm exec playwright test
+
+      - name: Run Lighthouse performance budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome_path="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [[ -n "${chrome_path}" ]]; then
+            export CHROME_PATH="${chrome_path}"
+          fi
+          pnpm exec lhci autorun --config=./lighthouserc.cjs
 
       - name: Upload Playwright diagnostics
         if: failure()
@@ -226,6 +251,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            .lighthouseci/
           if-no-files-found: ignore
           retention-days: 7
 
