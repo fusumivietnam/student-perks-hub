@@ -45,9 +45,13 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #20 Define admin authorization model
 - [x] #43 Add critical browser E2E release gate
 
+### Recently completed product slices
+
+- [x] #49 Implement admin moderation console and admin RLS
+
 ### In progress product slice
 
-- [ ] #49 Implement admin moderation console and admin RLS
+- [ ] #51 Add canonical metadata sitemap and robots
 
 ### Next product slice
 
@@ -200,7 +204,7 @@ Issue: #19
 
 ## 10 — Admin authorization and moderation
 
-Status: **In progress**
+Status: **Complete**
 
 Issues: #20, #49
 
@@ -212,11 +216,11 @@ Authorization foundation completed:
 
 Moderation slice (#49):
 
-- [ ] admin-only RLS for submissions, offers, and categories
-- [ ] review submissions
-- [ ] offer/category CRUD
-- [ ] publish/expire/archive
-- [ ] admin browser authorization/moderation coverage
+- [x] admin-only RLS for submissions, offers, and categories
+- [x] review submissions
+- [x] offer/category CRUD
+- [x] publish/expire/archive
+- [x] admin browser authorization/moderation coverage
 
 ## 11 — Production readiness
 
@@ -236,8 +240,8 @@ Foundation completed:
 
 Remaining before first production release:
 
-- [ ] metadata, canonical URLs, Open Graph
-- [ ] sitemap and robots
+- [x] metadata, canonical URLs, Open Graph
+- [x] sitemap and robots
 - [ ] accessibility pass and automated gate
 - [x] critical browser E2E flows
 - [ ] performance budget/check
@@ -272,6 +276,8 @@ Remaining before first production release:
 #20 Admin authorization
         ↓
 #49 Admin moderation
+        ↓
+#51 SEO metadata / sitemap / robots
         ↓
 #21 Production readiness
 ```
