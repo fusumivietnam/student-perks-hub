@@ -164,6 +164,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       PLAYWRIGHT_VERSION: "1.63.0"
+      SUPABASE_TELEMETRY_DISABLED: "1"
 
     steps:
       - name: Checkout
@@ -204,8 +205,8 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install chromium
 
-      - name: Start local Supabase
-        run: pnpm local:start
+      - name: Start minimal local Supabase
+        run: node scripts/e2e-start.mjs
 
       - name: Rebuild deterministic database
         run: pnpm db:reset
