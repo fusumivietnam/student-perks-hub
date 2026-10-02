@@ -59,7 +59,7 @@ jobs:
             echo "database=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-(setup|start)\.mjs$|playwright\.config\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-(setup|start)\.mjs$|playwright\.config\.mjs$|lighthouserc\.cjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "e2e=false" >> "$GITHUB_OUTPUT"
@@ -160,11 +160,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       PLAYWRIGHT_VERSION: "1.63.0"
       AXE_PLAYWRIGHT_VERSION: "4.13.0"
+      LHCI_VERSION: "0.15.1"
       SUPABASE_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -191,7 +192,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false             "@playwright/test@${PLAYWRIGHT_VERSION}"             "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}"
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "@playwright/test@${PLAYWRIGHT_VERSION}" "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}" "@lhci/cli@${LHCI_VERSION}"
           git checkout -- package.json
 
       - name: Restore Chromium cache
@@ -218,7 +219,26 @@ jobs:
       - name: Run critical browser flows
         run: pnpm exec playwright test
 
-      - name: Upload Playwright diagnostics
+      - name: Build production application for performance audit
+        run: pnpm build
+
+      - name: Resolve Chrome for Lighthouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate in google-chrome-stable google-chrome chromium chromium-browser; do
+            if command -v "${candidate}" >/dev/null 2>&1; then
+              echo "CHROME_PATH=$(command -v "${candidate}")" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo "No system Chrome/Chromium executable was found." >&2
+          exit 1
+
+      - name: Run Lighthouse performance budget
+        run: pnpm exec lhci autorun --config=./lighthouserc.cjs
+
+      - name: Upload browser diagnostics
         if: failure()
         uses: actions/upload-artifact@v7.0.0
         with:
@@ -226,6 +246,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            .lighthouseci/
           if-no-files-found: ignore
           retention-days: 7
 
