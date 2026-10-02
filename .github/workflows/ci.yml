@@ -164,6 +164,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       PLAYWRIGHT_VERSION: "1.63.0"
+      AXE_PLAYWRIGHT_VERSION: "4.13.0"
       SUPABASE_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -186,11 +187,11 @@ jobs:
       - name: Install repository dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install pinned Playwright test runner
+      - name: Install pinned browser test tools
         shell: bash
         run: |
           set -euo pipefail
-          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "@playwright/test@${PLAYWRIGHT_VERSION}"
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false             "@playwright/test@${PLAYWRIGHT_VERSION}"             "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}"
           git checkout -- package.json
 
       - name: Restore Chromium cache
