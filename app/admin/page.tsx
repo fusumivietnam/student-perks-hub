@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -10,6 +11,11 @@ import {
 import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Moderation console",
+  robots: { index: false, follow: false },
+};
 
 export const dynamic = "force-dynamic";
 
