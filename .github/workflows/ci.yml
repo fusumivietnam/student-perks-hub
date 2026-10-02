@@ -186,7 +186,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install pinned Playwright test runner
-        run: pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "@playwright/test@${PLAYWRIGHT_VERSION}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "@playwright/test@${PLAYWRIGHT_VERSION}"
+          git checkout -- package.json
 
       - name: Restore Chromium cache
         uses: actions/cache@v6.1.0
@@ -214,7 +218,7 @@ jobs:
 
       - name: Upload Playwright diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: playwright-failure-${{ github.run_id }}
           path: |
