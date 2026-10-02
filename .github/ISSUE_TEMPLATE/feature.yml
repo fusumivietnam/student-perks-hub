@@ -1,6 +1,7 @@
 name: Feature
 description: One concrete vertical-slice implementation task
 title: "[Feature] "
+labels: ["type:feature"]
 body:
   - type: textarea
     id: task
