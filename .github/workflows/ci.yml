@@ -59,7 +59,7 @@ jobs:
             echo "database=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-setup\.mjs$|playwright\.config\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-(setup|start)\.mjs$|playwright\.config\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "e2e=false" >> "$GITHUB_OUTPUT"
