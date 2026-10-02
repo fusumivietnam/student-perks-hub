@@ -46,9 +46,11 @@ Work in small vertical slices. Every implementation slice must go through a pull
 
 - [x] #49 Implement admin moderation console and admin RLS
 
+- [x] #51 Add canonical metadata sitemap and robots
+
 ### In progress product slice
 
-- [ ] #51 Add canonical metadata sitemap and robots
+- [ ] #53 Add automated accessibility release gate
 
 ### Next product slice
 
@@ -239,7 +241,8 @@ Remaining before first production release:
 
 - [x] metadata, canonical URLs, Open Graph
 - [x] sitemap and robots
-- [ ] accessibility pass and automated gate
+- [x] automated accessibility gate
+- [ ] manual accessibility pass
 - [x] critical browser E2E flows
 - [ ] performance budget/check
 - [ ] final legal/privacy content review
@@ -275,6 +278,8 @@ Remaining before first production release:
 #49 Admin moderation
         ↓
 #51 SEO metadata / sitemap / robots
+        ↓
+#53 Accessibility automated gate
         ↓
 #21 Production readiness
 ```
