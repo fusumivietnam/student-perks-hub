@@ -212,21 +212,39 @@ Authorization must be implemented and tested before admin CRUD.
 
 ## 11 — Production readiness
 
-Status: **Planned**
+Status: **In progress**
 
 Issue: #21
 
-- metadata, canonical URLs, Open Graph
-- sitemap and robots
-- accessibility pass
-- critical Playwright flows
-- performance check
-- real legal content
-- Preview / Production GitHub Environments
-- deployment configuration
-- production database migration gate
-- release/tag strategy
-- no production secrets in the repository
+Foundation completed:
+
+- [x] provider-neutral environment contract
+- [x] release and rollback runbook
+- [x] incident-response runbook
+- [x] security reporting policy
+- [x] public liveness endpoint at `/api/health`
+- [x] documented end-to-end development lifecycle
+- [x] no production secrets in the repository
+
+Remaining before first production release:
+
+- [ ] metadata, canonical URLs, Open Graph
+- [ ] sitemap and robots
+- [ ] accessibility pass and automated gate
+- [ ] critical browser E2E flows
+- [ ] performance budget/check
+- [ ] final legal/privacy content review
+- [ ] application hosting provider decision
+- [ ] Preview / Production deployment environments
+- [ ] remote Preview / Production Supabase projects
+- [ ] protected environment secrets and deployment permissions
+- [ ] production database migration gate
+- [ ] application/error monitoring and alert routing
+- [ ] database backup/restore verification
+- [ ] provider-specific deploy automation
+- [ ] Preview dress rehearsal
+- [ ] release/tag automation or documented release operation
+- [ ] production rollback drill
 
 ## Delivery order
 
