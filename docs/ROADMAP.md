@@ -51,13 +51,13 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] #51 Add canonical metadata sitemap and robots
 - [x] #53 Add automated accessibility release gate
 
-### Current release-gate slice
+### Completed automated release gates
 
-- [ ] #55 Add production-build performance budget
+- [x] #55 Add production-build performance budget
 
-### Production lifecycle closure
+### Current production-environment slice
 
-- [ ] #42 Select production hosting and deployment topology
+- [x] #42 Select production hosting and deployment topology
 - [ ] #46 Provision protected Preview and Production environments
 - [ ] #44 Establish production observability and alert routing
 - [ ] #45 Verify production database backup and restore procedure
@@ -79,7 +79,7 @@ The MVP application, authentication, bookmarks, submissions, admin authorization
 
 ## 02 — Automated release gates
 
-Status: **In progress**
+Status: **Complete**
 
 Completed:
 
@@ -88,19 +88,23 @@ Completed:
 - [x] Browser E2E critical flows
 - [x] automated accessibility gate
 - [x] CodeQL and repository security controls
-
-Remaining:
-
-- [ ] #55 production-build Lighthouse/performance budget
+- [x] #55 production-build Lighthouse/performance budget
 
 ## 03 — Production topology and environments
 
-Status: **Blocked on #42**
+Status: **In progress — #42 accepted, #46 active**
+
+Accepted topology:
+
+- Vercel for Next.js application hosting;
+- dedicated Supabase Preview project;
+- dedicated Supabase Production project;
+- GitHub Actions as release/migration control plane.
 
 Required order:
 
-1. #42 select hosting and document application/Supabase topology;
-2. #46 create isolated Preview and Production environments;
+1. [x] #42 select hosting and document application/Supabase topology;
+2. [ ] #46 create isolated Preview and Production environments;
 3. provision separate remote Preview and Production Supabase projects;
 4. configure protected secrets and deployment permissions;
 5. support deployment from an exact reviewed commit;
@@ -138,10 +142,10 @@ All of the following are required before #21 can close:
 - [x] sitemap and robots
 - [x] critical Browser E2E
 - [x] automated accessibility gate
-- [ ] #55 performance budget
+- [x] #55 performance budget
 - [ ] manual accessibility review
 - [ ] final legal/privacy review
-- [ ] #42 hosting/topology decision
+- [x] #42 hosting/topology decision
 - [ ] #46 isolated Preview / Production environments
 - [ ] remote Preview / Production Supabase projects
 - [ ] protected secrets and production deployment permissions
@@ -182,9 +186,9 @@ Idea / requirement
 ## Delivery order
 
 ```text
-#55 Performance budget
+#55 Performance budget ✓
         ↓
-#42 Hosting / topology decision
+#42 Hosting / topology decision ✓
         ↓
 #46 Preview + Production environments
         ↓
