@@ -1,36 +1,31 @@
 # Release control plane
 
-The repository uses GitHub Actions as the release control plane for the Vercel + Supabase topology accepted in ADR-0001.
+GitHub Actions is the release control plane for the Vercel + Supabase topology in ADR-0001 as amended by ADR-0002.
 
-## Workflow
+## Scope
 
-`.github/workflows/release.yml` is manual by design. It accepts:
+`.github/workflows/release.yml` is **Production-only**. Preview validation is handled by CI with disposable local Supabase; optional Vercel Preview deployments are not allowed to consume Production database or migration credentials.
 
-- target environment: `preview` or `production`;
+The workflow accepts:
+
 - exact 40-character commit SHA;
-- whether database migrations should be applied;
+- whether Production migrations should be applied;
 - migration class;
 - dry-run mode.
 
-A release SHA must already be reachable from protected `main` and must have successful `CI` and `CodeQL` workflow runs for that exact SHA.
+A release SHA must be reachable from protected `main` and have successful `CI` and `CodeQL` runs for that exact SHA.
 
-## Environment protection
+## Protected Production environment
 
-Create two GitHub Environments:
+Create one protected GitHub Environment named `production`.
 
-- `preview`
-- `production`
-
-The Production environment should require explicit reviewer approval before jobs can access its secrets. Preview and Production must have different secret values.
-
-Required environment-scoped secrets:
+Production secrets belong only there:
 
 ### Vercel
 
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
-- optional `VERCEL_AUTOMATION_BYPASS_SECRET` when Deployment Protection is enabled
 
 ### Supabase
 
@@ -38,61 +33,47 @@ Required environment-scoped secrets:
 - `SUPABASE_PROJECT_REF`
 - `SUPABASE_DB_PASSWORD`
 
-Do not store those values as repository files or plaintext workflow constants.
+Do not store these values in repository files or expose them to Preview deployments.
 
 ## Concurrency
 
-The workflow uses one concurrency group per release environment and does not cancel an in-flight release.
-
-This means Production has one serialized migration/deployment lane.
+All Production release runs share one concurrency lane with `cancel-in-progress: false`, preventing overlapping migrations or deployments.
 
 ## Migration gate
 
-The workflow always runs a remote `supabase db push --dry-run` before applying migrations.
+The workflow performs `supabase db push --dry-run` before applying remote migrations.
 
-Automated application is allowed only for migrations classified as `backward-compatible`.
+Automatic application is allowed only for migrations classified as `backward-compatible`.
 
-`coordinated` and `destructive` migrations fail closed and must follow the reviewed release/rollback runbook with explicit human sequencing.
+`coordinated` and `destructive` migrations fail closed and must follow the reviewed release/rollback runbook.
 
 ## Deployment provenance
 
 The workflow:
 
 1. validates the exact commit SHA;
-2. verifies successful CI and CodeQL for that SHA;
+2. verifies CI and CodeQL for that SHA;
 3. checks out that exact SHA;
-4. plans/applies permitted migrations;
-5. builds a Vercel artifact from the same SHA;
+4. plans/applies permitted Production migrations;
+5. builds the Vercel Production artifact from the same SHA;
 6. deploys that artifact;
 7. runs smoke checks;
-8. stores `release-evidence.json` as a 30-day workflow artifact.
+8. stores `release-evidence.json` as a 30-day artifact.
 
-Release evidence records environment, commit SHA, deployment URL, workflow run ID, migration state, and smoke-check results.
+## Preview validation
 
-## Smoke checks
+Preview-equivalent data/auth verification is already performed in CI with local Supabase, including migrations, seed, RLS, Auth, browser E2E, accessibility, and Lighthouse.
 
-Post-deploy smoke checks validate:
-
-- `/api/health`;
-- `/`;
-- `/offers/github-student-developer-pack`.
-
-If Vercel Deployment Protection is enabled, configure the environment-scoped automation bypass secret so CI can verify Preview without making Preview public.
-
-## Dry-run
-
-Use `dry_run=true` before the first real Preview release.
-
-Dry-run validates provenance and, when requested, remote migration planning without deploying the application.
+A Vercel Preview may be used for UI/build review but must not receive Production Supabase secrets. A managed remote Preview database can be added later if the product needs persistent staging.
 
 ## Resource provisioning still required
 
-The workflow is intentionally unable to invent credentials or paid resources.
-
-Before the first non-dry release:
+Before the first non-dry Production release:
 
 - connect/provision the Vercel project;
-- provision dedicated Preview and Production Supabase projects;
-- populate the two GitHub Environments with isolated secrets;
-- configure Production environment reviewer protection;
-- test Preview migration/deploy/smoke/rollback end to end.
+- provision one dedicated Production Supabase project;
+- populate the protected `production` GitHub Environment secrets;
+- configure Production reviewer protection;
+- run a Production dry-run;
+- verify backup/recovery and monitoring;
+- perform a controlled launch and rollback rehearsal.
