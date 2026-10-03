@@ -38,7 +38,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # A manual CI run is an explicit full verification request.
           if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
             echo "database=true" >> "$GITHUB_OUTPUT"
             echo "e2e=true" >> "$GITHUB_OUTPUT"
@@ -246,7 +245,7 @@ jobs:
           fi
           pnpm exec lhci autorun --config=./lighthouserc.cjs
 
-      - name: Upload Playwright diagnostics
+      - name: Upload Playwright and Lighthouse diagnostics
         if: failure()
         uses: actions/upload-artifact@v7.0.0
         with:
@@ -256,6 +255,7 @@ jobs:
             test-results/
             .lighthouseci/
           if-no-files-found: ignore
+          include-hidden-files: true
           retention-days: 7
 
       - name: Stop local Supabase
