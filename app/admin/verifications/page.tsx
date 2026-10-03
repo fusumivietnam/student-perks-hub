@@ -47,15 +47,17 @@ export default async function AdminVerificationsPage() {
         {verifications?.length ? (
           verifications.map((verification) => {
             const status = statusCopy[verification.status as keyof typeof statusCopy];
+            const StatusIcon = status?.Icon;
+
             return (
               <article key={verification.id} className="rounded-2xl border bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-bold text-slate-950">{verification.institution_name}</h2>
-                      {status ? (
+                      {status && StatusIcon ? (
                         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}>
-                          <status.Icon className="size-3.5" aria-hidden="true" />
+                          <StatusIcon className="size-3.5" aria-hidden="true" />
                           {status.label}
                         </span>
                       ) : null}
