@@ -29,12 +29,18 @@ export async function SiteHeader() {
         </nav>
 
         {auth ? (
-          <div className="flex items-center gap-3">
-            <span className="hidden max-w-48 truncate text-xs text-slate-500 sm:block">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/account"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Tài khoản
+            </Link>
+            <span className="hidden max-w-40 truncate text-xs text-slate-500 lg:block">
               {auth.email ?? "Đã đăng nhập"}
             </span>
             <form action={signOut}>
-              <button className="rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+              <button className="rounded-xl border px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-4">
                 Đăng xuất
               </button>
             </form>
