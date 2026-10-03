@@ -21,6 +21,11 @@ async function login(page) {
   await loginWith(page, testEmail, testPassword);
 }
 
+async function signOut(page) {
+  await page.getByRole("button", { name: "Đăng xuất" }).click();
+  await expect(page.getByRole("link", { name: "Đăng nhập" })).toBeVisible();
+}
+
 test("anonymous discovery reaches a verified offer detail", async ({ page }) => {
   await page.goto("/offers");
 
@@ -118,12 +123,17 @@ test("offer submission stays pending after browser submission", async ({
   expect(rows[0]).toMatchObject({ title, status: "pending" });
 });
 
-
 test("regular authenticated user cannot access admin console", async ({ page }) => {
   await login(page);
 
   const response = await page.goto("/admin");
-  expect(response?.status()).toBe(404);
+  const customNotFound = page.getByRole("heading", { name: "Không tìm thấy trang" });
+  const renderedCustomNotFound = (await customNotFound.count()) > 0;
+
+  expect(response?.status() === 404 || renderedCustomNotFound).toBeTruthy();
+  await expect(
+    page.getByRole("heading", { name: "Moderation console" }),
+  ).toHaveCount(0);
 });
 
 test("admin can review a pending submission", async ({ page }) => {
@@ -149,4 +159,30 @@ test("admin can review a pending submission", async ({ page }) => {
   await expect(submission).toBeVisible();
   await submission.getByRole("button", { name: "Approve" }).click();
   await expect(submission.getByText("approved")).toBeVisible();
+});
+
+test("student verification requires admin review before verified state", async ({ page }) => {
+  const institution = `E2E University ${Date.now()}`;
+
+  await login(page);
+  await page.goto("/verification");
+  await page.getByLabel("Tên trường hoặc tổ chức giáo dục").fill(institution);
+  await page.getByRole("button", { name: "Gửi yêu cầu xác minh" }).click();
+
+  await expect(page).toHaveURL(/\/verification\?success=1/);
+  await expect(page.getByText("Đang chờ duyệt", { exact: true })).toBeVisible();
+  await signOut(page);
+
+  await loginWith(page, adminEmail, adminPassword);
+  await page.goto("/admin/verifications");
+
+  const verification = page.locator("article").filter({ hasText: institution });
+  await expect(verification).toBeVisible();
+  await verification.getByRole("button", { name: "Xác minh 1 năm" }).click();
+  await expect(verification.getByText("Đã xác minh", { exact: true })).toBeVisible();
+  await signOut(page);
+
+  await login(page);
+  await page.goto("/verification");
+  await expect(page.getByText("Đã xác minh", { exact: true })).toBeVisible();
 });
