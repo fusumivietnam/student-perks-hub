@@ -118,12 +118,15 @@ test("offer submission stays pending after browser submission", async ({
   expect(rows[0]).toMatchObject({ title, status: "pending" });
 });
 
-
 test("regular authenticated user cannot access admin console", async ({ page }) => {
   await login(page);
 
-  const response = await page.goto("/admin");
-  expect(response?.status()).toBe(404);
+  await page.goto("/admin");
+
+  await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Moderation console" }),
+  ).toHaveCount(0);
 });
 
 test("admin can review a pending submission", async ({ page }) => {

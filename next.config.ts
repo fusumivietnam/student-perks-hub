@@ -4,6 +4,7 @@ const supabaseInternalUrl =
   process.env.SUPABASE_INTERNAL_URL ?? "http://127.0.0.1:54321";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   async rewrites() {
     return [
       {
