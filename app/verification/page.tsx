@@ -69,6 +69,7 @@ export default async function VerificationPage({ searchParams }: VerificationPag
   const status = verification
     ? statusCopy[verification.status as keyof typeof statusCopy]
     : null;
+  const StatusIcon = status?.Icon;
   const canRequest = !verification || verification.status === "rejected" || verification.status === "expired";
 
   return (
@@ -101,10 +102,10 @@ export default async function VerificationPage({ searchParams }: VerificationPag
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
         <section className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold text-primary">Trạng thái hiện tại</p>
-          {verification && status ? (
+          {verification && status && StatusIcon ? (
             <div className="mt-4">
               <div className={`flex items-start gap-3 rounded-2xl border p-4 ${status.className}`}>
-                <status.Icon className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
+                <StatusIcon className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
                 <div>
                   <h2 className="font-bold">{status.label}</h2>
                   <p className="mt-1 text-sm opacity-90">{status.description}</p>
