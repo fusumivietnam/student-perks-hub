@@ -1,12 +1,12 @@
 # Environment model
 
-Student Perks Hub uses three logical environments. Provider-specific configuration may vary, but these responsibilities must stay separate.
+Student Perks Hub uses three logical environments while keeping the initial managed-infrastructure footprint minimal.
 
 | Environment | Purpose | Data | Deployment |
 | --- | --- | --- | --- |
 | Local | development and database iteration | disposable local Supabase | developer machine / Codespaces |
-| Preview | pull-request verification and release rehearsal | isolated non-production Supabase | per-PR or shared preview |
-| Production | public service | production Supabase | protected production deployment |
+| Preview | pull-request validation and UI/build review | disposable local Supabase in CI; no Production data | GitHub Actions + optional Vercel Preview |
+| Production | public service | dedicated managed Supabase Production | protected Vercel Production deployment |
 
 ## Local
 
@@ -18,27 +18,33 @@ Local development is fully reproducible from the repository:
 - `pnpm db:types`
 - `pnpm dev`
 
-Local development must never require production credentials.
+Local development must never require Production credentials.
 
 ## Preview
 
-Preview must use non-production credentials, a non-production Supabase project, and non-production data.
+The authoritative Preview validation environment is GitHub Actions using the repository-managed local Supabase stack.
 
-Required configuration:
+It validates:
 
-- `NEXT_PUBLIC_SITE_URL` — absolute public URL for canonical metadata, sitemap, and robots
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- optional `SUPABASE_INTERNAL_URL` when the hosting topology needs a private server-side endpoint
+- migrations and deterministic seed data;
+- database authorization and RLS;
+- Auth and PostgREST behavior;
+- generated database types;
+- production Next.js build;
+- browser E2E;
+- accessibility;
+- Lighthouse performance budgets.
+
+Vercel Preview deployments are optional UI/build review surfaces. Until a dedicated managed Preview backend is intentionally added, they are not considered full remote data/auth staging environments.
 
 Preview must not:
 
-- point to the Production database;
-- reuse Production service-role credentials;
-- receive copied production user/session data by default;
+- receive Production Supabase service-role or migration credentials;
+- receive Production database passwords or access tokens;
+- mutate Production data as a staging shortcut;
 - have permission to promote or mutate Production resources.
 
-Preview is the mandatory rehearsal target for migrations, application promotion, smoke checks, monitoring tests, and rollback before the first Production launch.
+A dedicated managed Preview Supabase project may be added later when persistent remote staging is justified by integrations, release frequency, or risk.
 
 ## Production
 
@@ -46,41 +52,49 @@ Production deployment requires:
 
 1. CI Gate and CodeQL green on the exact commit.
 2. Reviewed and classified database migrations.
-3. A protected deployment environment.
-4. Production secrets stored only in the deployment platform / GitHub Environment.
+3. A protected Production deployment environment.
+4. Production secrets stored only in the deployment platform / protected environment.
 5. Restricted deployment permission.
-6. A single production deployment concurrency lane.
-7. A known-good rollback target.
+6. A single Production deployment concurrency lane.
+7. A known-good application rollback target.
 8. Monitoring and alert routing enabled.
 9. Backup/recovery capability confirmed.
 10. Smoke checks after deployment.
 
-`NEXT_PUBLIC_SITE_URL` must be set to the canonical production origin.
+Production uses one dedicated managed Supabase project.
+
+Required application configuration includes:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- optional `SUPABASE_INTERNAL_URL` when required by runtime topology
+
+Migration credentials and any service-role credentials remain server-side and outside the repository.
 
 ## Secret ownership
 
-Never commit environment secrets. Public browser keys may be exposed only when they are explicitly designed to be public; service-role credentials remain server-only.
+Never commit environment secrets. Public browser keys may be exposed only when explicitly designed to be public; service-role credentials remain server-only.
 
-Production secrets must be isolated from Preview, rotated when exposure is suspected, and access must follow least privilege. Record suspected exposure in the incident process.
+Production secrets must not be copied into Preview. Rotate them when exposure is suspected and record suspected exposure through the incident process.
 
 ## Promotion model
 
-Promote the same reviewed source commit through environments whenever the deployment platform supports it:
-
 ```text
-PR commit
-  → Preview
-  → review / gates
+PR
+  → local Supabase CI validation
+  → optional Vercel Preview UI/build review
   → merge to main
-  → release candidate SHA
-  → protected Production deployment
+  → exact release candidate SHA
+  → protected Production migration gate
+  → Vercel Production + Supabase Production
 ```
 
 Do not rebuild from an unrelated branch for Production.
 
 ## Deployment identity
 
-Every Preview and Production deployment should expose or record:
+Every Production deployment must record:
 
 - environment;
 - commit SHA;
@@ -88,7 +102,7 @@ Every Preview and Production deployment should expose or record:
 - deployment/workflow identifier;
 - database migration state or migration identifier.
 
-Monitoring and incident records should use the same identity so a production error can be correlated back to the exact release.
+Monitoring and incident records should use the same identity so an error can be correlated to the exact release.
 
 ## Production isolation invariant
 

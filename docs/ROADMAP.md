@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-Last updated: 2026-10-02
+Last updated: 2026-10-03
 
 Work in small vertical slices. Every implementation slice must go through a pull request, pass the required checks, and receive a Ponytail diff review.
 
@@ -12,22 +12,18 @@ Work in small vertical slices. Every implementation slice must go through a pull
 - [x] Supabase SSR clients and auth proxy baseline
 - [x] local-first Supabase CLI + Docker workflow
 - [x] declarative database schema under `supabase/schemas/`
-- [x] versioned initial migration under `supabase/migrations/`
-- [x] deterministic category and verified-offer seed data
-- [x] RLS baseline for profiles, categories, offers, bookmarks, and submissions
+- [x] versioned migrations and deterministic seed data
+- [x] RLS baseline and database authorization tests
 - [x] generated Supabase database types + drift gate
-- [x] Node 24 LTS + pinned pnpm + committed `pnpm-lock.yaml`
-- [x] CI: install, typecheck, lint, build
-- [x] Database CI: local Supabase start, reset, seed, generated-type drift check
-- [x] critical Browser E2E release gate
-- [x] automated accessibility release gate
-- [x] CodeQL + Dependabot
-- [x] secret scanning + push protection
-- [x] protected `main` ruleset with squash-only PR flow
-- [x] GitHub Project #3 fields, views, and issue/PR synchronization
-- [x] repository governance automation
-- [x] provider-neutral environment, release, rollback, incident, and security runbooks
-- [x] public liveness endpoint at `/api/health`
+- [x] Node 24 LTS + pinned pnpm + committed lockfile
+- [x] CI: install, typecheck, lint, production build
+- [x] Browser E2E, accessibility, Lighthouse performance budget
+- [x] CodeQL + Dependabot + secret scanning + push protection
+- [x] protected `main` + squash-only PR flow
+- [x] GitHub Project fields/views/synchronization and repository governance
+- [x] environment/release/rollback/incident/security runbooks
+- [x] public `/api/health`
+- [x] exact-SHA Production release control plane
 
 ### Independent platform verification
 
@@ -35,30 +31,27 @@ Work in small vertical slices. Every implementation slice must go through a pull
 
 ### Completed product slices
 
-- [x] #10 Generate Supabase database types and enforce schema/type drift checks
-- [x] #11 Render categories from Supabase
-- [x] #12 Implement OfferCard
-- [x] #13 Seed a reviewed set of verified offers
-- [x] #14 Build homepage offer sections
-- [x] #15 Build offers discovery
-- [x] #16 Build offer detail page
-- [x] #17 Implement Supabase authentication
-- [x] #18 Implement bookmarks
-- [x] #19 Implement offer submission
-- [x] #20 Define admin authorization model
-- [x] #43 Add critical browser E2E release gate
-- [x] #49 Implement admin moderation console and admin RLS
-- [x] #51 Add canonical metadata sitemap and robots
-- [x] #53 Add automated accessibility release gate
+- [x] #10 database type drift gate
+- [x] #11 categories from Supabase
+- [x] #12 OfferCard
+- [x] #13 verified offer seed set
+- [x] #14 homepage offer sections
+- [x] #15 offers discovery
+- [x] #16 offer detail
+- [x] #17 Supabase authentication
+- [x] #18 bookmarks
+- [x] #19 offer submission
+- [x] #20 admin authorization model
+- [x] #43 critical Browser E2E gate
+- [x] #49 admin moderation console + admin RLS
+- [x] #51 canonical metadata / sitemap / robots
+- [x] #53 automated accessibility gate
+- [x] #55 production-build performance budget
 
-### Current release-gate slice
+### Current production-environment slice
 
-- [ ] #55 Add production-build performance budget
-
-### Production lifecycle closure
-
-- [ ] #42 Select production hosting and deployment topology
-- [ ] #46 Provision protected Preview and Production environments
+- [x] #42 Select production hosting and deployment topology
+- [ ] #46 Provision protected Production environment and cost-optimized Preview model
 - [ ] #44 Establish production observability and alert routing
 - [ ] #45 Verify production database backup and restore procedure
 - [ ] #21 Complete first-production readiness, rehearsal, release, and rollback evidence
@@ -75,56 +68,68 @@ Remaining verification:
 
 Status: **Complete**
 
-The MVP application, authentication, bookmarks, submissions, admin authorization/moderation, SEO surfaces, database/RLS model, generated types, browser E2E, and automated accessibility gate are implemented.
+The MVP application, authentication, bookmarks, submissions, admin authorization/moderation, SEO surfaces, database/RLS model, generated types, browser E2E, accessibility, and performance gates are implemented.
 
 ## 02 — Automated release gates
 
-Status: **In progress**
-
-Completed:
+Status: **Complete**
 
 - [x] typecheck, lint, production build
 - [x] database reset/seed/RLS tests/type drift
 - [x] Browser E2E critical flows
 - [x] automated accessibility gate
+- [x] Lighthouse production-build performance budget
 - [x] CodeQL and repository security controls
-
-Remaining:
-
-- [ ] #55 production-build Lighthouse/performance budget
 
 ## 03 — Production topology and environments
 
-Status: **Blocked on #42**
+Status: **In progress — #42 accepted, #46 active**
 
-Required order:
+Accepted topology after ADR-0002:
 
-1. #42 select hosting and document application/Supabase topology;
-2. #46 create isolated Preview and Production environments;
-3. provision separate remote Preview and Production Supabase projects;
-4. configure protected secrets and deployment permissions;
-5. support deployment from an exact reviewed commit;
-6. enforce one production deployment at a time;
-7. add provider-specific application deploy and database migration automation.
+- Vercel for Next.js application hosting;
+- local Supabase in GitHub Actions as the authoritative PR/Preview validation environment;
+- optional Vercel Preview for UI/build review with no Production Supabase secrets;
+- one dedicated managed Supabase Production project for the initial MVP/beta phase;
+- GitHub Actions as Production release/migration control plane.
 
-Preview must never use production data, production service-role credentials, or the production database.
+Completed:
+
+- [x] exact reviewed SHA required for release;
+- [x] exact-SHA CI + CodeQL provenance gate;
+- [x] single serialized Production release lane;
+- [x] remote migration dry-run gate;
+- [x] automatic migration limited to backward-compatible changes;
+- [x] provider-specific Vercel Production build/deploy path;
+- [x] post-deploy smoke evidence contract.
+
+Remaining under #46:
+
+1. [ ] provision one dedicated managed Supabase Production project;
+2. [ ] connect/provision the Vercel project;
+3. [ ] create protected `production` environment secrets and reviewer protection;
+4. [ ] configure Production Vercel environment variables;
+5. [ ] run release workflow in `dry_run=true` mode;
+6. [ ] perform first controlled Production deployment/smoke check;
+7. [ ] demonstrate immutable application rollback.
+
+A managed Preview Supabase project is not required for the initial launch. Add one later only when persistent remote staging is justified.
 
 ## 04 — Production operations and recovery
 
-Status: **Blocked on production topology**
+Status: **Blocked on Production resource provisioning**
 
 Required:
 
 - [ ] #44 application/error monitoring with release SHA correlation
 - [ ] #44 availability monitoring for `/api/health`
 - [ ] #44 alert owner, channel, and escalation path
-- [ ] #45 backup capability and retention documented
-- [ ] #45 non-production restore rehearsal
-- [ ] production migration classification and recovery plan for destructive changes
-- [ ] post-deploy smoke checks
+- [ ] #45 Production backup capability and retention documented
+- [ ] #45 restore rehearsal using a safe non-production target or provider-supported recovery workflow
+- [ ] migration recovery plan for destructive changes
 - [ ] immutable release/tag operation
-- [ ] production rollback drill
-- [ ] incident evidence linked back to release identity
+- [ ] Production rollback drill
+- [ ] incident evidence linked to release identity
 
 ## 05 — First production release
 
@@ -132,25 +137,25 @@ Status: **Not ready**
 
 Issue: #21
 
-All of the following are required before #21 can close:
+Required before closure:
 
 - [x] metadata, canonical URLs, Open Graph
 - [x] sitemap and robots
 - [x] critical Browser E2E
 - [x] automated accessibility gate
-- [ ] #55 performance budget
+- [x] performance budget
 - [ ] manual accessibility review
 - [ ] final legal/privacy review
-- [ ] #42 hosting/topology decision
-- [ ] #46 isolated Preview / Production environments
-- [ ] remote Preview / Production Supabase projects
-- [ ] protected secrets and production deployment permissions
-- [ ] production database migration gate
-- [ ] deploy concurrency protection
+- [x] hosting/topology decision
+- [x] cost-optimized Preview strategy
+- [ ] managed Supabase Production project
+- [ ] protected Production secrets and deployment permissions
+- [x] production database migration gate logic
+- [x] deploy concurrency protection
 - [ ] #44 observability and alert routing
 - [ ] #45 backup/restore verification
-- [ ] provider-specific deploy automation
-- [ ] Preview dress rehearsal from an exact commit SHA
+- [x] provider-specific deploy automation
+- [ ] Production dry-run from an exact commit SHA
 - [ ] release identity recorded as tag + commit SHA + workflow/deployment evidence
 - [ ] post-deploy smoke checks
 - [ ] production rollback drill
@@ -162,36 +167,32 @@ All of the following are required before #21 can close:
 Idea / requirement
   → Issue / Project triage
   → technical decision
-  → agent:ready
   → implementation branch
   → Pull Request
-  → CI Gate + CodeQL + database/browser gates
-  → Preview
-  → review
+  → CI Gate + CodeQL + local Supabase/browser gates
+  → optional Vercel Preview UI/build review
   → merge to main
   → immutable release candidate SHA
-  → production migration gate
-  → protected Production deployment
+  → Production migration dry-run / gate
+  → protected Vercel Production deployment
+  → managed Supabase Production
   → smoke checks
   → monitoring / alerting
-  → incident response when required
-  → rollback / restore
+  → incident response / rollback / restore
   → retrospective / follow-up issue
 ```
 
 ## Delivery order
 
 ```text
-#55 Performance budget
+#42 Hosting / topology ✓
         ↓
-#42 Hosting / topology decision
+ADR-0002 cost-optimized Preview ✓
         ↓
-#46 Preview + Production environments
+#46 Production resources + protected release
         ↓
 #44 Observability ─────┐
 #45 Backup/restore ────┤
-                      ↓
-     Preview dress rehearsal
                       ↓
  manual accessibility + legal review
                       ↓
@@ -200,18 +201,18 @@ Idea / requirement
       rollback/restore evidence
 ```
 
-#7 Codespaces verification is independent and should be completed without blocking the production-topology decision.
+#7 Codespaces verification remains independent.
 
 ## Architecture guardrails
 
-- local development uses Supabase CLI/Docker; do not add a second PostgreSQL Docker stack
-- SQL migrations and declarative schemas remain portable PostgreSQL-first
-- no production provider is assumed until #42 is approved
-- Preview and Production use isolated data and credentials
-- production deploys use an exact reviewed commit and one deployment concurrency lane
-- destructive database changes require explicit recovery planning
-- URL state before global client state
-- Server Components before client fetching where applicable
-- framework/native capability before adding dependencies
-- no unrelated refactors inside feature PRs
-- security, authorization, RLS, validation, accessibility, data integrity, recovery, and auditability are never simplified away
+- local development and PR validation use Supabase CLI/Docker;
+- do not introduce a second local PostgreSQL stack;
+- SQL migrations and declarative schemas remain PostgreSQL-first;
+- Preview never receives Production privileged credentials;
+- Production uses an exact reviewed commit and one deployment concurrency lane;
+- destructive migrations require explicit recovery planning;
+- URL state before global client state;
+- Server Components before client fetching where applicable;
+- framework/native capability before adding dependencies;
+- no unrelated refactors inside feature PRs;
+- security, authorization, RLS, validation, accessibility, data integrity, recovery, and auditability are never simplified away.
