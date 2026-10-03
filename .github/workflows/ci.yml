@@ -67,6 +67,7 @@ jobs:
 
   verify:
     name: verify
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -90,6 +91,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Restore Next.js build cache
+        if: needs.changes.outputs.e2e != 'true'
         uses: actions/cache@v6.1.0
         with:
           path: .next/cache
@@ -107,6 +109,7 @@ jobs:
         run: pnpm lint
 
       - name: Build
+        if: needs.changes.outputs.e2e != 'true'
         run: pnpm build
 
   database:
@@ -198,6 +201,17 @@ jobs:
             "@lhci/cli@${LHCI_VERSION}"
           git checkout -- package.json
 
+      - name: Restore Next.js production build cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('app/**/*', 'components/**/*', 'lib/**/*', 'next.config.*') }}
+          restore-keys: |
+            ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build production application
+        run: pnpm build
+
       - name: Restore Chromium cache
         uses: actions/cache@v6.1.0
         with:
@@ -218,17 +232,6 @@ jobs:
 
       - name: Create deterministic E2E user
         run: node scripts/e2e-setup.mjs
-
-      - name: Restore Next.js production build cache
-        uses: actions/cache@v6.1.0
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('app/**/*', 'components/**/*', 'lib/**/*', 'next.config.*') }}
-          restore-keys: |
-            ${{ runner.os }}-e2e-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
-
-      - name: Build production application
-        run: pnpm build
 
       - name: Run critical browser flows
         run: pnpm exec playwright test
