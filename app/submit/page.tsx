@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+
 import { submitOffer } from "@/app/submit/actions";
 import { getCurrentAuth } from "@/lib/auth";
 
@@ -47,7 +49,12 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
 
       {success ? (
         <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          Đã nhận đề xuất. Offer chỉ được publish sau khi được kiểm tra.
+          <p>Đã nhận đề xuất. Offer chỉ được publish sau khi được kiểm tra.</p>
+          {auth ? (
+            <Link href="/account" className="mt-2 inline-block font-semibold underline underline-offset-4">
+              Theo dõi trạng thái trong tài khoản
+            </Link>
+          ) : null}
         </div>
       ) : null}
 
