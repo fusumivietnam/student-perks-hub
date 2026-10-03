@@ -3,19 +3,12 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: Target environment
-        type: choice
-        required: true
-        options:
-          - preview
-          - production
       commit_sha:
         description: Exact reviewed commit SHA to release
         type: string
         required: true
       apply_migrations:
-        description: Apply pending Supabase migrations before application deploy
+        description: Apply pending Production Supabase migrations before deployment
         type: boolean
         required: true
         default: false
@@ -30,7 +23,7 @@ on:
           - coordinated
           - destructive
       dry_run:
-        description: Validate provenance and migration plan without deploying
+        description: Validate provenance and Production migration plan without deploying
         type: boolean
         required: true
         default: true
@@ -40,7 +33,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: release-${{ inputs.environment }}
+  group: release-production
   cancel-in-progress: false
 
 jobs:
@@ -64,20 +57,10 @@ jobs:
           REQUESTED_SHA: ${{ inputs.commit_sha }}
         run: |
           set -euo pipefail
-
-          if [[ ! "${REQUESTED_SHA}" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            echo "commit_sha must be a full 40-character Git SHA."
-            exit 1
-          fi
-
+          [[ "${REQUESTED_SHA}" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "commit_sha must be a full 40-character Git SHA."; exit 1; }
           git fetch origin main --no-tags
           git cat-file -e "${REQUESTED_SHA}^{commit}"
-
-          if ! git merge-base --is-ancestor "${REQUESTED_SHA}" origin/main; then
-            echo "Release SHA must already be reachable from protected main."
-            exit 1
-          fi
-
+          git merge-base --is-ancestor "${REQUESTED_SHA}" origin/main || { echo "Release SHA must be reachable from protected main."; exit 1; }
           resolved="$(git rev-parse "${REQUESTED_SHA}^{commit}")"
           echo "sha=${resolved}" >> "$GITHUB_OUTPUT"
 
@@ -88,26 +71,17 @@ jobs:
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
         run: |
           set -euo pipefail
-
           payload="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${RELEASE_SHA}&per_page=100")"
-
-          jq -e '
-            .workflow_runs
-            | any(.name == "CI" and .head_sha == env.RELEASE_SHA and .conclusion == "success")
-          ' <<< "${payload}" >/dev/null
-
-          jq -e '
-            .workflow_runs
-            | any(.name == "CodeQL" and .head_sha == env.RELEASE_SHA and .conclusion == "success")
-          ' <<< "${payload}" >/dev/null
+          jq -e '.workflow_runs | any(.name == "CI" and .head_sha == env.RELEASE_SHA and .conclusion == "success")' <<< "${payload}" >/dev/null
+          jq -e '.workflow_runs | any(.name == "CodeQL" and .head_sha == env.RELEASE_SHA and .conclusion == "success")' <<< "${payload}" >/dev/null
 
   migration-plan:
-    name: Plan database migration
+    name: Plan Production database migration
     needs: validate
     if: inputs.apply_migrations
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ inputs.environment }}
+    environment: production
 
     steps:
       - name: Checkout exact release SHA
@@ -128,26 +102,20 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install repository dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate migration policy
+      - name: Enforce migration policy
         shell: bash
         run: |
           set -euo pipefail
-
-          if [[ "${{ inputs.migration_class }}" == "none" ]]; then
-            echo "apply_migrations=true requires an explicit migration class."
-            exit 1
-          fi
-
+          [[ "${{ inputs.migration_class }}" != "none" ]] || { echo "apply_migrations=true requires a migration class."; exit 1; }
           if [[ "${{ inputs.dry_run }}" != "true" && "${{ inputs.migration_class }}" != "backward-compatible" ]]; then
-            echo "Automated release only applies backward-compatible migrations."
-            echo "Coordinated/destructive changes require the reviewed release runbook."
+            echo "Only backward-compatible migrations may be applied automatically."
             exit 1
           fi
 
-      - name: Link target Supabase project
+      - name: Link Production Supabase
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -158,8 +126,7 @@ jobs:
           test -n "${SUPABASE_ACCESS_TOKEN}"
           test -n "${SUPABASE_PROJECT_REF}"
           test -n "${SUPABASE_DB_PASSWORD}"
-
-          pnpm exec supabase link             --project-ref "${SUPABASE_PROJECT_REF}"             --password "${SUPABASE_DB_PASSWORD}"
+          pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
 
       - name: Dry-run pending migrations
         env:
@@ -175,7 +142,7 @@ jobs:
         run: pnpm exec supabase db push --password "${SUPABASE_DB_PASSWORD}"
 
   deploy:
-    name: Deploy exact SHA to Vercel
+    name: Deploy exact SHA to Vercel Production
     needs: [validate, migration-plan]
     if: |
       always() &&
@@ -184,7 +151,7 @@ jobs:
       (needs.migration-plan.result == 'success' || needs.migration-plan.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ inputs.environment }}
+    environment: production
     outputs:
       deployment_url: ${{ steps.deploy.outputs.url }}
 
@@ -207,7 +174,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install repository dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install pinned Vercel CLI
@@ -219,7 +186,7 @@ jobs:
           pnpm add --save-dev --ignore-workspace-root-check --lockfile=false "vercel@${VERCEL_CLI_VERSION}"
           git checkout -- package.json
 
-      - name: Pull target Vercel environment
+      - name: Pull Production Vercel environment
         shell: bash
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -230,42 +197,23 @@ jobs:
           test -n "${VERCEL_TOKEN}"
           test -n "${VERCEL_ORG_ID}"
           test -n "${VERCEL_PROJECT_ID}"
+          pnpm exec vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
-          pnpm exec vercel pull             --yes             --environment="${{ inputs.environment }}"             --token="${VERCEL_TOKEN}"
-
-      - name: Build Vercel artifact
-        shell: bash
+      - name: Build Production Vercel artifact
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [[ "${{ inputs.environment }}" == "production" ]]; then
-            pnpm exec vercel build --prod --token="${VERCEL_TOKEN}"
-          else
-            pnpm exec vercel build --token="${VERCEL_TOKEN}"
-          fi
+        run: pnpm exec vercel build --prod --token="${VERCEL_TOKEN}"
 
-      - name: Deploy immutable artifact
+      - name: Deploy immutable Production artifact
         id: deploy
         shell: bash
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           set -euo pipefail
-
-          if [[ "${{ inputs.environment }}" == "production" ]]; then
-            deployment_url="$(pnpm exec vercel deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}" | tail -n 1)"
-          else
-            deployment_url="$(pnpm exec vercel deploy --prebuilt --yes --token="${VERCEL_TOKEN}" | tail -n 1)"
-          fi
-
-          if [[ ! "${deployment_url}" =~ ^https:// ]]; then
-            echo "Could not resolve Vercel deployment URL: ${deployment_url}"
-            exit 1
-          fi
-
+          deployment_url="$(pnpm exec vercel deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}" | tail -n 1)"
+          [[ "${deployment_url}" =~ ^https:// ]] || { echo "Could not resolve deployment URL: ${deployment_url}"; exit 1; }
           echo "url=${deployment_url}" >> "$GITHUB_OUTPUT"
-          echo "Deployed ${{ needs.validate.outputs.release_sha }} to ${deployment_url}"
 
   smoke:
     name: Post-deploy smoke checks
@@ -273,7 +221,7 @@ jobs:
     if: needs.deploy.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: ${{ inputs.environment }}
+    environment: production
 
     steps:
       - name: Checkout exact release SHA
@@ -284,16 +232,15 @@ jobs:
       - name: Run smoke verification and record evidence
         env:
           DEPLOYMENT_URL: ${{ needs.deploy.outputs.deployment_url }}
-          RELEASE_ENVIRONMENT: ${{ inputs.environment }}
+          RELEASE_ENVIRONMENT: production
           RELEASE_SHA: ${{ needs.validate.outputs.release_sha }}
           MIGRATION_STATE: ${{ inputs.apply_migrations && 'applied' || 'not-requested' }}
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: node scripts/smoke-release.mjs
 
       - name: Upload release evidence
         uses: actions/upload-artifact@v7.0.0
         with:
-          name: release-evidence-${{ inputs.environment }}-${{ needs.validate.outputs.release_sha }}
+          name: release-evidence-production-${{ needs.validate.outputs.release_sha }}
           path: release-evidence.json
           if-no-files-found: error
           retention-days: 30
