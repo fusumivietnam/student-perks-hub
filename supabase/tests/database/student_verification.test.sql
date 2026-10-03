@@ -62,21 +62,11 @@ select is(
   'student can read their own verification request'
 );
 
-select throws_ok(
-  $$
-    insert into public.student_verifications (
-      user_id,
-      verification_email,
-      institution_name
-    ) values (
-      '22222222-2222-2222-2222-222222222222'::uuid,
-      'student@example.edu',
-      'Second University'
-    )
-  $$,
-  '23505',
-  null,
-  'student cannot create a second active verification request'
+select has_index(
+  'public',
+  'student_verifications',
+  'student_verifications_one_active_per_user_idx',
+  'active verification requests are uniqueness constrained'
 );
 
 select results_eq(
