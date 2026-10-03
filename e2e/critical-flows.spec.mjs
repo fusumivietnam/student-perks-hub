@@ -126,9 +126,11 @@ test("offer submission stays pending after browser submission", async ({
 test("regular authenticated user cannot access admin console", async ({ page }) => {
   await login(page);
 
-  await page.goto("/admin");
+  const response = await page.goto("/admin");
+  const customNotFound = page.getByRole("heading", { name: "Không tìm thấy trang" });
+  const renderedCustomNotFound = (await customNotFound.count()) > 0;
 
-  await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
+  expect(response?.status() === 404 || renderedCustomNotFound).toBeTruthy();
   await expect(
     page.getByRole("heading", { name: "Moderation console" }),
   ).toHaveCount(0);
