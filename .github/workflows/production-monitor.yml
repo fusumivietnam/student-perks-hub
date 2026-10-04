@@ -106,7 +106,7 @@ jobs:
 
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           issue_number="$(
-            gh issue list --state open --limit 100 --json number,title |
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
               jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
               head -n 1
           )"
@@ -123,9 +123,10 @@ jobs:
           Treat this as an operational signal. Confirm user impact and follow \`docs/INCIDENT_RESPONSE.md\`. No response body, headers, session data, or credentials are copied into this issue."
 
           if [[ -n "${issue_number}" ]]; then
-            gh issue comment "${issue_number}" --body "${body}"
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "${body}"
           else
             gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
               --title "${INCIDENT_TITLE}" \
               --body "${body}" \
               --label "type:bug" \
@@ -144,15 +145,15 @@ jobs:
           set -euo pipefail
 
           issue_number="$(
-            gh issue list --state open --limit 100 --json number,title |
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
               jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
               head -n 1
           )"
 
           if [[ -n "${issue_number}" ]]; then
             run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            gh issue comment "${issue_number}" --body "Production health recovered on release \`${RELEASE_SHA}\` / deployment \`${DEPLOYMENT_ID}\`. Verification: ${run_url}"
-            gh issue close "${issue_number}" --reason completed
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "Production health recovered on release \`${RELEASE_SHA}\` / deployment \`${DEPLOYMENT_ID}\`. Verification: ${run_url}"
+            gh issue close --repo "${GITHUB_REPOSITORY}" "${issue_number}" --reason completed
           fi
 
       - name: Publish monitor summary
