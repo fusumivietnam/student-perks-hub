@@ -1,6 +1,6 @@
 # Performance budget
 
-Student Perks Hub uses Lighthouse CI as a deterministic production-build release gate.
+Student Perks Hub uses Lighthouse CI as a production-build release gate.
 
 ## Scope
 
@@ -13,14 +13,18 @@ The audit runs against `next build` + `next start`, not the development server, 
 
 ## Budgets
 
-CI currently enforces conservative desktop thresholds:
+CI enforces these desktop thresholds:
 
 - Lighthouse performance score: **>= 0.75**
 - Largest Contentful Paint: **<= 4.0 s**
 - Cumulative Layout Shift: **<= 0.10**
 - Total Blocking Time: **<= 600 ms**
 
-These thresholds are intended to catch material regressions while remaining stable on shared GitHub-hosted runners. Tighten them only after enough CI history exists to distinguish real regressions from runner variance.
+Each URL is collected three times and assertions use the median value. This keeps the thresholds unchanged while reducing false failures caused by natural Lighthouse variance on shared GitHub-hosted runners.
+
+The CLS threshold is intentionally not relaxed. Historical failed reports showed the offer-detail footer shifting by roughly 0.124 while dynamic content settled. The application shell now reserves viewport height so that baseline defect is addressed at layout level rather than hidden by a looser budget.
+
+Tighten thresholds only after enough CI history exists to distinguish real regressions from runner variance.
 
 ## Tooling
 
