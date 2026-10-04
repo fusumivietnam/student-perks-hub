@@ -64,7 +64,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '22222222-2222-2222-2222-222222222222';
 
 select is(
-  public.is_admin(),
+  private.is_admin(),
   false,
   'regular authenticated user is not an admin'
 );
@@ -93,9 +93,9 @@ select results_eq(
 set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
 
 select is(
-  public.is_admin(),
+  private.is_admin(),
   true,
-  'admin membership resolves through is_admin'
+  'admin membership resolves through private is_admin helper'
 );
 
 select is(
