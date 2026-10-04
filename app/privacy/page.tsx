@@ -1,8 +1,27 @@
 import type { Metadata } from "next";
 
+const description =
+  "Cách Student Perks Hub xử lý dữ liệu tài khoản, bookmark, submission và dữ liệu vận hành.";
+
 export const metadata: Metadata = {
   title: "Quyền riêng tư",
-  description: "Cách Student Perks Hub xử lý dữ liệu tài khoản, bookmark, submission và dữ liệu vận hành.",
+  description,
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: "Quyền riêng tư | Student Perks Hub",
+    description,
+    url: "/privacy",
+    siteName: "Student Perks Hub",
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Quyền riêng tư | Student Perks Hub",
+    description,
+  },
 };
 
 const sections = [
