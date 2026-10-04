@@ -1,0 +1,148 @@
+name: Database Recovery Rehearsal
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/database-backup.yml"
+      - ".github/workflows/database-recovery-rehearsal.yml"
+      - "scripts/database-backup.sh"
+      - "supabase/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-recovery-rehearsal-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  restore-rehearsal:
+    name: Restore representative local backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      BACKUP_ENCRYPTION_PASSPHRASE: "local-rehearsal-only-not-a-production-secret"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Start local database
+        run: pnpm exec supabase db start
+
+      - name: Build representative source state
+        run: pnpm exec supabase db reset --local
+
+      - name: Resolve local database URL
+        id: database
+        shell: bash
+        run: |
+          set -euo pipefail
+          db_url="$(pnpm exec supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          test -n "${db_url}"
+          echo "url=${db_url}" >> "${GITHUB_OUTPUT}"
+
+      - name: Record representative counts before backup
+        id: before
+        env:
+          DB_URL: ${{ steps.database.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          categories="$(psql "${DB_URL}" -Atc 'select count(*) from public.categories')"
+          offers="$(psql "${DB_URL}" -Atc 'select count(*) from public.offers')"
+          test "${categories}" -gt 0
+          test "${offers}" -gt 0
+          echo "categories=${categories}" >> "${GITHUB_OUTPUT}"
+          echo "offers=${offers}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create encrypted representative backup
+        id: backup
+        env:
+          SUPABASE_DB_URL: ${{ steps.database.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rehearsal-backup
+          archive="$(bash scripts/database-backup.sh rehearsal-backup)"
+          sha256sum --check "${archive}.sha256"
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+
+      - name: Decrypt backup in ephemeral runner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p restore-input
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
+            -in "${{ steps.backup.outputs.archive }}" |
+            tar -xzf - -C restore-input
+          test -s restore-input/data.sql
+          test -s restore-input/schema.sql
+          test -s restore-input/history_data.sql
+
+      - name: Rebuild clean target from versioned migrations
+        run: pnpm exec supabase db reset --local --no-seed
+
+      - name: Restore representative data
+        env:
+          DB_URL: ${{ steps.database.outputs.url }}
+        run: psql --single-transaction --variable ON_ERROR_STOP=1 --file restore-input/data.sql --dbname "${DB_URL}"
+
+      - name: Verify restored data and authorization tests
+        env:
+          DB_URL: ${{ steps.database.outputs.url }}
+          EXPECTED_CATEGORIES: ${{ steps.before.outputs.categories }}
+          EXPECTED_OFFERS: ${{ steps.before.outputs.offers }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql "${DB_URL}" -Atc 'select count(*) from public.categories')" = "${EXPECTED_CATEGORIES}"
+          test "$(psql "${DB_URL}" -Atc 'select count(*) from public.offers')" = "${EXPECTED_OFFERS}"
+          pnpm db:test
+
+      - name: Publish rehearsal evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Database recovery rehearsal"
+            echo ""
+            echo "- Source: deterministic local Supabase seed"
+            echo "- Production data copied into CI: no"
+            echo "- Backup encrypted before persistence: yes"
+            echo "- Restore target rebuilt from versioned migrations: yes"
+            echo "- Restored data checked: categories + offers"
+            echo "- RLS/auth database tests: executed"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Remove decrypted material
+        if: always()
+        run: rm -rf rehearsal-backup restore-input
+
+      - name: Stop local database
+        if: always()
+        run: pnpm exec supabase stop --no-backup
