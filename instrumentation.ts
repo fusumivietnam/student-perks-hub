@@ -6,6 +6,23 @@ function requestPathWithoutQuery(path: string) {
   return path.split("?", 1)[0] || "/";
 }
 
+function getErrorName(error: unknown) {
+  return error instanceof Error ? error.name : "UnknownError";
+}
+
+function getErrorDigest(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof error.digest === "string"
+  ) {
+    return error.digest;
+  }
+
+  return null;
+}
+
 export const onRequestError: Instrumentation.onRequestError = (
   error,
   request,
@@ -16,8 +33,8 @@ export const onRequestError: Instrumentation.onRequestError = (
   console.error(
     JSON.stringify({
       event: "server_error",
-      errorName: error.name,
-      digest: error.digest || null,
+      errorName: getErrorName(error),
+      digest: getErrorDigest(error),
       method: request.method,
       path: requestPathWithoutQuery(request.path),
       routerKind: context.routerKind,
