@@ -1,8 +1,27 @@
 import type { Metadata } from "next";
 
+const description =
+  "Điều khoản sử dụng Student Perks Hub và các liên kết ưu đãi bên thứ ba.";
+
 export const metadata: Metadata = {
   title: "Điều khoản sử dụng",
-  description: "Điều khoản sử dụng Student Perks Hub và các liên kết ưu đãi bên thứ ba.",
+  description,
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: "Điều khoản sử dụng | Student Perks Hub",
+    description,
+    url: "/terms",
+    siteName: "Student Perks Hub",
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Điều khoản sử dụng | Student Perks Hub",
+    description,
+  },
 };
 
 const sections = [
