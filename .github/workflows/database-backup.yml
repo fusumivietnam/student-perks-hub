@@ -1,0 +1,94 @@
+name: Production Database Backup
+
+on:
+  schedule:
+    - cron: "17 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Create encrypted logical backup
+    if: github.event_name == 'workflow_dispatch' || vars.DATABASE_BACKUP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require protected backup credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}"
+          test -n "${BACKUP_ENCRYPTION_PASSPHRASE}"
+          [[ "${SUPABASE_DB_URL}" == postgresql://* || "${SUPABASE_DB_URL}" == postgres://* ]]
+
+      - name: Create encrypted backup
+        id: backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup-output
+          archive="$(bash scripts/database-backup.sh backup-output)"
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+          echo "checksum=${archive}.sha256" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify encrypted artifact integrity
+        shell: bash
+        run: sha256sum --check "${{ steps.backup.outputs.checksum }}"
+
+      - name: Upload encrypted backup only
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: production-database-backup-${{ github.run_id }}
+          path: |
+            ${{ steps.backup.outputs.archive }}
+            ${{ steps.backup.outputs.checksum }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish backup evidence
+        shell: bash
+        run: |
+          {
+            echo "## Production database backup"
+            echo ""
+            echo "- Result: encrypted logical backup created"
+            echo "- Encryption: AES-256-CBC / PBKDF2"
+            echo "- Artifact retention: 30 days"
+            echo "- Raw SQL uploaded: no"
+            echo "- Workflow run: \`${GITHUB_RUN_ID}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Remove local backup material
+        if: always()
+        shell: bash
+        run: rm -rf backup-output
