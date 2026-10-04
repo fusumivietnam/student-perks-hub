@@ -6,7 +6,7 @@ module.exports = {
         "http://127.0.0.1:3000/offers/github-student-developer-pack",
       ],
       startServerCommand: "pnpm start",
-      numberOfRuns: 1,
+      numberOfRuns: 3,
       settings: {
         preset: "desktop",
         chromeFlags: "--headless --no-sandbox --disable-dev-shm-usage",
@@ -14,10 +14,22 @@ module.exports = {
     },
     assert: {
       assertions: {
-        "categories:performance": ["error", { minScore: 0.75 }],
-        "largest-contentful-paint": ["error", { maxNumericValue: 4000 }],
-        "cumulative-layout-shift": ["error", { maxNumericValue: 0.1 }],
-        "total-blocking-time": ["error", { maxNumericValue: 600 }],
+        "categories:performance": [
+          "error",
+          { minScore: 0.75, aggregationMethod: "median" },
+        ],
+        "largest-contentful-paint": [
+          "error",
+          { maxNumericValue: 4000, aggregationMethod: "median" },
+        ],
+        "cumulative-layout-shift": [
+          "error",
+          { maxNumericValue: 0.1, aggregationMethod: "median" },
+        ],
+        "total-blocking-time": [
+          "error",
+          { maxNumericValue: 600, aggregationMethod: "median" },
+        ],
       },
     },
     upload: {
