@@ -1,0 +1,174 @@
+name: Production Monitor
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: Exercise the alert path without breaking Production
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-monitor
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_URL: https://student-perks-hub-fusumivietnam.vercel.app
+  INCIDENT_TITLE: "[monitor] Production health check failing"
+
+jobs:
+  health:
+    name: Check Production health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check health endpoint and release identity
+        id: health
+        shell: bash
+        env:
+          SIMULATE_FAILURE: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure || false }}
+        run: |
+          set -u
+
+          endpoint="${PRODUCTION_URL}/api/health"
+          response_file="$(mktemp)"
+
+          curl_status=0
+          http_code="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 2 \
+            --retry-delay 2 \
+            --max-time 15 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            "${endpoint}")" || curl_status=$?
+
+          healthy=true
+          reason="ok"
+          release="unknown"
+          deployment="unknown"
+          environment="unknown"
+
+          if [[ -s "${response_file}" ]]; then
+            release="$(jq -r '.release // "unknown"' "${response_file}" 2>/dev/null || echo unknown)"
+            deployment="$(jq -r '.deployment // "unknown"' "${response_file}" 2>/dev/null || echo unknown)"
+            environment="$(jq -r '.environment // "unknown"' "${response_file}" 2>/dev/null || echo unknown)"
+          fi
+
+          if [[ "${SIMULATE_FAILURE}" == "true" ]]; then
+            healthy=false
+            reason="simulated alert-path failure"
+          elif [[ "${curl_status}" -ne 0 ]]; then
+            healthy=false
+            reason="curl failed with exit ${curl_status}"
+          elif [[ "${http_code}" != "200" ]]; then
+            healthy=false
+            reason="unexpected HTTP ${http_code}"
+          elif ! jq -e \
+            '.status == "ok" and .service == "student-perks-hub" and .environment == "production" and (.release | type == "string" and test("^[0-9a-f]{40}$")) and (.deployment | type == "string" and startswith("dpl_"))' \
+            "${response_file}" >/dev/null 2>&1; then
+            healthy=false
+            reason="health payload or release identity is invalid"
+          fi
+
+          rm -f "${response_file}"
+
+          {
+            echo "healthy=${healthy}"
+            echo "reason=${reason}"
+            echo "http_code=${http_code:-000}"
+            echo "release=${release}"
+            echo "deployment=${deployment}"
+            echo "environment=${environment}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Open or update incident issue
+        if: steps.health.outputs.healthy != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.health.outputs.reason }}
+          HTTP_CODE: ${{ steps.health.outputs.http_code }}
+          RELEASE_SHA: ${{ steps.health.outputs.release }}
+          DEPLOYMENT_ID: ${{ steps.health.outputs.deployment }}
+        run: |
+          set -euo pipefail
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          issue_number="$(
+            gh issue list --state open --limit 100 --json number,title |
+              jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          body="Production availability monitor failed.
+
+          - Endpoint: \`${PRODUCTION_URL}/api/health\`
+          - Reason: ${REASON}
+          - HTTP: ${HTTP_CODE}
+          - Release: \`${RELEASE_SHA}\`
+          - Deployment: \`${DEPLOYMENT_ID}\`
+          - Workflow run: ${run_url}
+
+          Treat this as an operational signal. Confirm user impact and follow \`docs/INCIDENT_RESPONSE.md\`. No response body, headers, session data, or credentials are copied into this issue."
+
+          if [[ -n "${issue_number}" ]]; then
+            gh issue comment "${issue_number}" --body "${body}"
+          else
+            gh issue create \
+              --title "${INCIDENT_TITLE}" \
+              --body "${body}" \
+              --label "type:bug" \
+              --label "area:platform" \
+              --label "needs:human"
+          fi
+
+      - name: Record recovery and close monitor incident
+        if: steps.health.outputs.healthy == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.health.outputs.release }}
+          DEPLOYMENT_ID: ${{ steps.health.outputs.deployment }}
+        run: |
+          set -euo pipefail
+
+          issue_number="$(
+            gh issue list --state open --limit 100 --json number,title |
+              jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          if [[ -n "${issue_number}" ]]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue comment "${issue_number}" --body "Production health recovered on release \`${RELEASE_SHA}\` / deployment \`${DEPLOYMENT_ID}\`. Verification: ${run_url}"
+            gh issue close "${issue_number}" --reason completed
+          fi
+
+      - name: Publish monitor summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Production monitor"
+            echo ""
+            echo "- Healthy: \`${{ steps.health.outputs.healthy }}\`"
+            echo "- Reason: ${{ steps.health.outputs.reason }}"
+            echo "- HTTP: \`${{ steps.health.outputs.http_code }}\`"
+            echo "- Release: \`${{ steps.health.outputs.release }}\`"
+            echo "- Deployment: \`${{ steps.health.outputs.deployment }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Fail unhealthy monitor run
+        if: steps.health.outputs.healthy != 'true'
+        run: exit 1
