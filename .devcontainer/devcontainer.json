@@ -5,17 +5,43 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [
-    3000,
-    54323
+    3000
   ],
   "portsAttributes": {
     "3000": {
       "label": "Student Perks Hub",
-      "onAutoForward": "openPreview"
+      "onAutoForward": "openPreview",
+      "visibility": "private"
+    },
+    "54321": {
+      "label": "Supabase API",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    },
+    "54322": {
+      "label": "Supabase Database",
+      "onAutoForward": "silent",
+      "visibility": "private"
     },
     "54323": {
       "label": "Supabase Studio",
-      "onAutoForward": "silent"
+      "onAutoForward": "silent",
+      "visibility": "private"
+    },
+    "54324": {
+      "label": "Supabase Inbucket",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    },
+    "54327": {
+      "label": "Supabase Analytics",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    },
+    "54329": {
+      "label": "Supabase Pooler",
+      "onAutoForward": "silent",
+      "visibility": "private"
     }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
