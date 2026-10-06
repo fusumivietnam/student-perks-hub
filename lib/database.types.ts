@@ -215,6 +215,45 @@ export type Database = {
         }
         Relationships: []
       }
+      student_verifications: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          institution_name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verification_email: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          institution_name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verification_email: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          institution_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verification_email?: string
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           created_at: string
