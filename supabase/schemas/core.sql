@@ -81,6 +81,8 @@ create table if not exists public.submissions (
 
 create index if not exists submissions_submitter_user_id_idx
   on public.submissions(submitter_user_id);
+create index if not exists submissions_reviewed_by_idx
+  on public.submissions(reviewed_by);
 
 create table if not exists public.admin_memberships (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -155,11 +157,20 @@ for select
 to anon, authenticated
 using (true);
 
-create policy "offers_public_read_published"
+create policy "offers_anon_read_published"
 on public.offers
 for select
-to anon, authenticated
+to anon
 using (status = 'published');
+
+create policy "offers_authenticated_read"
+on public.offers
+for select
+to authenticated
+using (
+  status = 'published'
+  or (select private.is_admin())
+);
 
 create policy "bookmarks_select_own"
 on public.bookmarks
@@ -195,11 +206,14 @@ with check (
   )
 );
 
-create policy "submissions_select_own"
+create policy "submissions_authenticated_read"
 on public.submissions
 for select
 to authenticated
-using ((select auth.uid()) = submitter_user_id);
+using (
+  (select auth.uid()) = submitter_user_id
+  or (select private.is_admin())
+);
 
 create policy "admin_memberships_select_own"
 on public.admin_memberships
@@ -226,12 +240,6 @@ for delete
 to authenticated
 using ((select private.is_admin()));
 
-create policy "offers_admin_select_all"
-on public.offers
-for select
-to authenticated
-using ((select private.is_admin()));
-
 create policy "offers_admin_insert"
 on public.offers
 for insert
@@ -248,12 +256,6 @@ with check ((select private.is_admin()));
 create policy "offers_admin_delete"
 on public.offers
 for delete
-to authenticated
-using ((select private.is_admin()));
-
-create policy "submissions_admin_select_all"
-on public.submissions
-for select
 to authenticated
 using ((select private.is_admin()));
 
