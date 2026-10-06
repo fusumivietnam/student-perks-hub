@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, auth;
 
-select plan(11);
+select plan(13);
 
 insert into auth.users (id, email)
 values
@@ -31,17 +31,29 @@ insert into public.offers (
   benefit_type,
   status
 )
-values (
-  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid,
-  'admin-test-draft',
-  'Admin test draft',
-  'Test provider',
-  'Draft visible only to administrators.',
-  'https://example.com/admin-test',
-  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
-  'free',
-  'draft'
-);
+values
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid,
+    'admin-test-draft',
+    'Admin test draft',
+    'Test provider',
+    'Draft visible only to administrators.',
+    'https://example.com/admin-test',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+    'free',
+    'draft'
+  ),
+  (
+    'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid,
+    'public-test-offer',
+    'Public test offer',
+    'Test provider',
+    'Published offer remains visible to authenticated members.',
+    'https://example.com/public-test',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+    'free',
+    'published'
+  );
 
 insert into public.submissions (
   id,
@@ -51,14 +63,23 @@ insert into public.submissions (
   official_url,
   status
 )
-values (
-  'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,
-  '11111111-1111-1111-1111-111111111111'::uuid,
-  'Submission provider',
-  'Pending admin review',
-  'https://example.com/submission',
-  'pending'
-);
+values
+  (
+    'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,
+    '11111111-1111-1111-1111-111111111111'::uuid,
+    'Submission provider',
+    'Pending admin review',
+    'https://example.com/submission',
+    'pending'
+  ),
+  (
+    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid,
+    '22222222-2222-2222-2222-222222222222'::uuid,
+    'Member submission provider',
+    'Member-owned submission',
+    'https://example.com/member-submission',
+    'pending'
+  );
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '22222222-2222-2222-2222-222222222222';
@@ -76,9 +97,21 @@ select is(
 );
 
 select is(
+  (select count(*) from public.offers where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid),
+  1::bigint,
+  'regular user can still read published offers after SELECT policy consolidation'
+);
+
+select is(
   (select count(*) from public.submissions where id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid),
   0::bigint,
   'regular user cannot read another user submission'
+);
+
+select is(
+  (select count(*) from public.submissions where id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid),
+  1::bigint,
+  'regular user can still read own submission after SELECT policy consolidation'
 );
 
 select results_eq(
