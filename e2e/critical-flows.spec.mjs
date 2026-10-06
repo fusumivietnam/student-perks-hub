@@ -42,6 +42,19 @@ test("anonymous discovery reaches a verified offer detail", async ({ page }) => 
   );
 });
 
+test("unknown route renders the branded not-found state", async ({ page }) => {
+  const response = await page.goto("/__e2e_missing_route__");
+
+  expect(response?.status()).toBe(404);
+  await expect(
+    page.getByRole("heading", { name: "Không tìm thấy trang" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Về trang chủ" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Xem tất cả ưu đãi" }),
+  ).toBeVisible();
+});
+
 test("saved page enforces the authentication boundary", async ({ page }) => {
   await page.goto("/saved");
 
@@ -118,12 +131,17 @@ test("offer submission stays pending after browser submission", async ({
   expect(rows[0]).toMatchObject({ title, status: "pending" });
 });
 
-
 test("regular authenticated user cannot access admin console", async ({ page }) => {
   await login(page);
 
   const response = await page.goto("/admin");
   expect(response?.status()).toBe(404);
+  await expect(
+    page.getByRole("heading", { name: "Không tìm thấy trang" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Moderation console" }),
+  ).toHaveCount(0);
 });
 
 test("admin can review a pending submission", async ({ page }) => {
