@@ -131,15 +131,21 @@ jobs:
       - name: Dry-run pending migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: pnpm exec supabase db push --dry-run --password "${SUPABASE_DB_PASSWORD}"
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}"
+          pnpm exec supabase db push --dry-run --db-url "${SUPABASE_DB_URL}"
 
       - name: Apply backward-compatible migrations
         if: inputs.dry_run == false
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: pnpm exec supabase db push --password "${SUPABASE_DB_PASSWORD}"
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}"
+          pnpm exec supabase db push --db-url "${SUPABASE_DB_URL}"
 
   deploy:
     name: Deploy exact SHA to Vercel Production
