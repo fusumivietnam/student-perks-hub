@@ -14,11 +14,9 @@ for _ in {1..15}; do
 done
 
 if [[ "${docker_ready}" == "1" ]]; then
-  if ! pnpm exec supabase status >/dev/null 2>&1; then
-    echo "==> Starting local Supabase"
-    pnpm exec supabase start || echo "::warning::Supabase did not start automatically; run 'pnpm local:start' manually."
-  else
-    echo "==> Supabase is already running"
+  echo "==> Preparing local Supabase environment"
+  if ! pnpm local:start; then
+    echo "::warning::Local Supabase environment did not initialize automatically; run 'pnpm local:start' manually."
   fi
 else
   echo "::warning::Docker is not ready; skipping automatic Supabase start."
