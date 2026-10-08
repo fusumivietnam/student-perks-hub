@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 const description =
-  "Cách Student Perks Hub xử lý dữ liệu tài khoản, bookmark, submission và dữ liệu vận hành.";
+  "Cách Student Perks Hub xử lý dữ liệu tài khoản, bookmark, submission, xác minh sinh viên và dữ liệu vận hành.";
 
 export const metadata: Metadata = {
   title: "Quyền riêng tư",
@@ -31,12 +31,14 @@ const sections = [
       "Khi bạn chỉ duyệt các ưu đãi công khai, ứng dụng không yêu cầu bạn tạo tài khoản. Hạ tầng lưu trữ và cơ sở dữ liệu vẫn có thể xử lý metadata kỹ thuật tiêu chuẩn cần thiết để phục vụ và bảo vệ yêu cầu web.",
       "Nếu bạn đăng nhập, Supabase Auth xử lý thông tin xác thực và định danh tài khoản. Các bảng ứng dụng có thể lưu hồ sơ như tên hiển thị hoặc ảnh đại diện, các ưu đãi bạn đã lưu và mã định danh tài khoản liên quan. Ứng dụng không chủ ý ghi mật khẩu của bạn vào các bảng ứng dụng.",
       "Khi bạn gửi một ưu đãi, chúng tôi lưu các trường bạn cung cấp như nhà cung cấp, tiêu đề, URL chính thức, mô tả và ghi chú. Nếu bạn đang đăng nhập, submission có thể được liên kết với tài khoản của bạn; submission ẩn danh không có liên kết tài khoản.",
+      "Nếu bạn dùng tính năng xác minh sinh viên, ứng dụng lưu mã định danh tài khoản, email của chính tài khoản đó, tên trường hoặc tổ chức giáo dục bạn cung cấp, trạng thái review và các mốc thời gian review/hết hạn. Phiên bản hiện tại không yêu cầu và không có trường lưu tài liệu, ảnh thẻ sinh viên, mã số sinh viên hoặc ảnh giấy tờ tùy thân.",
     ],
   },
   {
     title: "Mục đích sử dụng",
     paragraphs: [
-      "Dữ liệu được dùng để vận hành đăng nhập, hồ sơ, bookmark, tiếp nhận và kiểm duyệt submission, hiển thị nội dung đã được duyệt, bảo vệ hệ thống, xử lý sự cố và cải thiện độ tin cậy của dịch vụ.",
+      "Dữ liệu được dùng để vận hành đăng nhập, hồ sơ, bookmark, tiếp nhận và kiểm duyệt submission, xử lý yêu cầu xác minh sinh viên, hiển thị nội dung đã được duyệt, bảo vệ hệ thống, xử lý sự cố và cải thiện độ tin cậy của dịch vụ.",
+      "Thông tin xác minh sinh viên chỉ được dùng để quản lý trạng thái đủ điều kiện trong Student Perks Hub. Quản trị viên có thể xem email tài khoản, tên tổ chức và metadata review cần thiết để đưa ra hoặc thu hồi trạng thái xác minh.",
       "Chúng tôi không bán dữ liệu cá nhân và hiện không triển khai quảng cáo hành vi hoặc hệ thống analytics bên thứ ba cho mục đích quảng cáo.",
     ],
   },
@@ -58,6 +60,7 @@ const sections = [
     title: "Lưu giữ, bảo mật và khôi phục",
     paragraphs: [
       "Dữ liệu ứng dụng được giữ trong thời gian cần thiết để cung cấp tính năng, kiểm duyệt submission, bảo vệ tính toàn vẹn hệ thống hoặc đáp ứng nghĩa vụ vận hành hợp lý. Chính sách lưu giữ chi tiết sẽ được điều chỉnh khi khối lượng dữ liệu người dùng tăng; không nên hiểu nội dung này là cam kết lưu dữ liệu vô thời hạn.",
+      "Trạng thái xác minh được duyệt hiện có hiệu lực tối đa một năm kể từ thời điểm duyệt, trừ khi bị đánh dấu hết hạn sớm. Bản ghi lịch sử review có thể được giữ sau khi hết hiệu lực để vận hành quy trình xác minh và ngăn trạng thái mâu thuẫn; người dùng có thể yêu cầu xử lý dữ liệu theo phần bên dưới.",
       "Quyền truy cập database được bảo vệ bằng Row Level Security và các kiểm soát dành riêng cho admin. Backup/recovery được thiết kế để không đưa raw SQL chứa dữ liệu người dùng vào artifact công khai; phạm vi và giới hạn phục hồi được quản lý như một phần của quy trình vận hành Production.",
     ],
   },
@@ -75,7 +78,7 @@ export default function PrivacyPage() {
     <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <p className="text-sm font-semibold text-primary">Pháp lý</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">Quyền riêng tư</h1>
-      <p className="mt-4 text-sm text-slate-500">Có hiệu lực: 4 tháng 10, 2026</p>
+      <p className="mt-4 text-sm text-slate-500">Có hiệu lực: 7 tháng 10, 2026</p>
       <p className="mt-6 max-w-3xl text-base leading-7 text-slate-700">
         Chính sách này mô tả dữ liệu mà Student Perks Hub xử lý trong phiên bản
         Production hiện tại. Nếu tính năng, nhà cung cấp hoặc mục đích xử lý thay
