@@ -76,26 +76,47 @@ jobs:
           jq -e '.workflow_runs | any(.name == "CodeQL" and .head_sha == env.RELEASE_SHA and .conclusion == "success")' <<< "${payload}" >/dev/null
 
   migration-plan:
-    name: Plan Production database migration
+    name: Resolve Production database migration plan
     needs: validate
-    if: inputs.apply_migrations
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
 
     steps:
+      - name: Enforce migration policy
+        shell: bash
+        env:
+          APPLY_MIGRATIONS: ${{ inputs.apply_migrations }}
+          MIGRATION_CLASS: ${{ inputs.migration_class }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          if [[ "${APPLY_MIGRATIONS}" == "true" ]]; then
+            [[ "${MIGRATION_CLASS}" != "none" ]] || { echo "apply_migrations=true requires a migration class."; exit 1; }
+            if [[ "${DRY_RUN}" != "true" && "${MIGRATION_CLASS}" != "backward-compatible" ]]; then
+              echo "Only backward-compatible migrations may be applied automatically."
+              exit 1
+            fi
+          else
+            [[ "${MIGRATION_CLASS}" == "none" ]] || { echo "apply_migrations=false requires migration_class=none."; exit 1; }
+            echo "No Production database migration requested."
+          fi
+
       - name: Checkout exact release SHA
+        if: inputs.apply_migrations
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.validate.outputs.release_sha }}
 
       - name: Set up pnpm
+        if: inputs.apply_migrations
         uses: pnpm/action-setup@v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
+        if: inputs.apply_migrations
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .nvmrc
@@ -103,19 +124,11 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
+        if: inputs.apply_migrations
         run: pnpm install --frozen-lockfile
 
-      - name: Enforce migration policy
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "${{ inputs.migration_class }}" != "none" ]] || { echo "apply_migrations=true requires a migration class."; exit 1; }
-          if [[ "${{ inputs.dry_run }}" != "true" && "${{ inputs.migration_class }}" != "backward-compatible" ]]; then
-            echo "Only backward-compatible migrations may be applied automatically."
-            exit 1
-          fi
-
       - name: Link Production Supabase
+        if: inputs.apply_migrations
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -129,6 +142,7 @@ jobs:
           pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
 
       - name: Dry-run pending migrations
+        if: inputs.apply_migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -138,7 +152,7 @@ jobs:
           pnpm exec supabase db push --dry-run --db-url "${SUPABASE_DB_URL}"
 
       - name: Apply backward-compatible migrations
-        if: inputs.dry_run == false
+        if: inputs.apply_migrations && inputs.dry_run == false
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -151,10 +165,9 @@ jobs:
     name: Deploy exact SHA to Vercel Production
     needs: [validate, migration-plan]
     if: |
-      always() &&
       inputs.dry_run == false &&
       needs.validate.result == 'success' &&
-      (needs.migration-plan.result == 'success' || needs.migration-plan.result == 'skipped')
+      needs.migration-plan.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
