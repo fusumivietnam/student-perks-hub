@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Bookmark, CheckCircle2, Clock3, FileText, LockKeyhole, Send } from "lucide-react";
+import {
+  BadgeCheck,
+  Bookmark,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  LockKeyhole,
+  Send,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { updatePassword } from "@/app/account/actions";
@@ -38,12 +46,27 @@ const submissionStatus = {
   },
 } as const;
 
+function verificationLabel(status: string | undefined, expiresAt: string | null | undefined) {
+  if (!status) return "Chưa xác minh";
+  if (status === "pending") return "Đang chờ duyệt";
+  if (status === "rejected") return "Cần xác minh lại";
+  if (status === "expired") return "Đã hết hạn";
+  if (
+    status === "verified" &&
+    expiresAt &&
+    new Date(expiresAt).getTime() > Date.now()
+  ) {
+    return "Đã xác minh";
+  }
+  return "Đã hết hạn";
+}
+
 export default async function AccountPage({ searchParams }: AccountPageProps) {
   const [auth, params] = await Promise.all([getCurrentAuth(), searchParams]);
   if (!auth) redirect("/login?next=/account");
 
   const supabase = await createClient();
-  const [bookmarksResult, submissionsResult] = await Promise.all([
+  const [bookmarksResult, submissionsResult, verificationResult] = await Promise.all([
     supabase
       .from("bookmarks")
       .select("offer_id", { count: "exact", head: true })
@@ -54,14 +77,22 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       .eq("submitter_user_id", auth.id)
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("student_verifications")
+      .select("status,expires_at")
+      .eq("user_id", auth.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  if (bookmarksResult.error || submissionsResult.error) {
+  if (bookmarksResult.error || submissionsResult.error || verificationResult.error) {
     throw new Error("Could not load account data");
   }
 
   const submissions = submissionsResult.data ?? [];
   const pendingCount = submissions.filter((item) => item.status === "pending").length;
+  const verification = verificationResult.data;
   const success = one(params.success);
   const error = one(params.error);
 
@@ -74,12 +105,16 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             Trung tâm tài khoản
           </h1>
           <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-            Theo dõi ưu đãi đã lưu, đề xuất đã gửi và các thiết lập bảo mật của bạn.
+            Theo dõi ưu đãi đã lưu, đề xuất, trạng thái xác minh và bảo mật tài khoản.
           </p>
         </div>
         <div className="rounded-2xl border bg-slate-50 px-4 py-3 text-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email đăng nhập</p>
-          <p className="mt-1 font-semibold text-slate-900">{auth.email ?? "Không có email"}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Email đăng nhập
+          </p>
+          <p className="mt-1 font-semibold text-slate-900">
+            {auth.email ?? "Không có email"}
+          </p>
         </div>
       </div>
 
@@ -96,8 +131,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         </div>
       ) : null}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <Link href="/saved" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/saved"
+          className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <span className="grid size-10 place-items-center rounded-xl bg-blue-50 text-primary">
               <Bookmark className="size-5" aria-hidden="true" />
@@ -129,6 +167,19 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <p className="mt-4 font-bold">Đang chờ duyệt</p>
           <p className="mt-1 text-sm text-slate-500">Đề xuất chưa có quyết định cuối.</p>
         </div>
+
+        <Link
+          href="/verification"
+          className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+        >
+          <span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+            <BadgeCheck className="size-5" aria-hidden="true" />
+          </span>
+          <p className="mt-4 font-bold">Xác minh sinh viên</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {verificationLabel(verification?.status, verification?.expires_at)}
+          </p>
+        </Link>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.35fr_.65fr]">

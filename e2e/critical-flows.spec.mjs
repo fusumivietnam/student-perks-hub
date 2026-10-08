@@ -143,6 +143,36 @@ test("regular authenticated user cannot access admin console", async ({ page }) 
   ).toHaveCount(0);
 });
 
+test("student request can be approved by admin and becomes verified", async ({ page }) => {
+  const institution = `E2E University ${Date.now()}`;
+
+  await login(page);
+  await page.goto("/verification");
+  await page.getByLabel("Tên trường hoặc tổ chức giáo dục").fill(institution);
+  await page.getByRole("button", { name: "Gửi yêu cầu xác minh" }).click();
+
+  await expect(
+    page.getByText("Đã gửi yêu cầu xác minh. Bạn có thể quay lại trang này để theo dõi trạng thái."),
+  ).toBeVisible();
+  await expect(page.getByText("Đang chờ duyệt", { exact: true })).toBeVisible();
+
+  await page.context().clearCookies();
+  await loginWith(page, adminEmail, adminPassword);
+  await page.goto("/admin/verifications");
+
+  await expect(page.getByRole("heading", { name: "Xác minh sinh viên" })).toBeVisible();
+  const verification = page.locator("article").filter({ hasText: institution });
+  await expect(verification).toBeVisible();
+  await verification.getByRole("button", { name: "Xác minh 1 năm" }).click();
+  await expect(verification.getByText("Đã xác minh", { exact: true })).toBeVisible();
+
+  await page.context().clearCookies();
+  await login(page);
+  await page.goto("/verification");
+  await expect(page.getByText("Đã xác minh", { exact: true })).toBeVisible();
+  await expect(page.getByText(institution)).toBeVisible();
+});
+
 test("admin can review a pending submission", async ({ page }) => {
   const title = `E2E Admin Review ${Date.now()}`;
 
