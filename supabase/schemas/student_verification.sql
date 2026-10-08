@@ -81,7 +81,7 @@ for insert
 to authenticated
 with check (
   (select auth.uid()) = user_id
-  and lower(verification_email) = lower((select auth.jwt() ->> 'email'))
+  and lower(verification_email) = lower((select auth.jwt()) ->> 'email')
   and not (select private.has_active_student_verification((select auth.uid())))
 );
 
