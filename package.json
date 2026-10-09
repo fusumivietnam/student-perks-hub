@@ -11,6 +11,7 @@
     "local:start": "node scripts/local-start.mjs",
     "local:stop": "supabase stop",
     "local:status": "supabase status",
+    "codespaces:smoke": "node scripts/codespaces-smoke.mjs",
     "db:reset": "supabase db reset --local",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "db:schema:sync": "supabase db schema declarative sync --no-apply",
