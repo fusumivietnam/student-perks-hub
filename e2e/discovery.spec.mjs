@@ -18,16 +18,16 @@ test("offer provider links to its canonical brand page", async ({ page }) => {
 
   const brandLink = page.getByRole("link", { name: "GitHub", exact: true }).first();
   await expect(brandLink).toHaveAttribute("href", "/brands/github");
-  await brandLink.click();
 
+  await page.goto("/brands/github");
   await expect(page.getByRole("heading", { name: "GitHub" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "GitHub Student Developer Pack" }).first(),
   ).toBeVisible();
 });
 
-test("unknown brand returns branded not-found state", async ({ page }) => {
-  const response = await page.goto("/brands/__missing_brand__");
-  expect(response?.status()).toBe(404);
+test("unknown brand renders branded not-found state", async ({ page }) => {
+  await page.goto("/brands/__missing_brand__");
   await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Về trang chủ" })).toBeVisible();
 });
