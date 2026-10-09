@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { brandSlug } from "@/lib/brands";
 import { createClient } from "@/lib/supabase/server";
 import { absoluteUrl } from "@/lib/site";
 
@@ -9,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("offers")
-    .select("slug,updated_at,published_at")
+    .select("slug,provider,updated_at,published_at")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -48,5 +49,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...offerEntries];
+  const providers = new Set<string>();
+  for (const offer of data ?? []) {
+    const slug = brandSlug(offer.provider);
+    if (slug) providers.add(slug);
+  }
+
+  const brandEntries: MetadataRoute.Sitemap = [...providers].map((slug) => ({
+    url: absoluteUrl(`/brands/${slug}`),
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...brandEntries, ...offerEntries];
 }

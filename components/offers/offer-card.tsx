@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { brandSlug } from "@/lib/brands";
 import type { Database } from "@/lib/database.types";
 
 type Offer = Database["public"]["Tables"]["offers"]["Row"];
@@ -40,6 +41,8 @@ function benefitLabel(type: string) {
 }
 
 export function OfferCard({ offer }: OfferCardProps) {
+  const providerSlug = brandSlug(offer.provider);
+
   return (
     <article className="flex h-full flex-col rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -62,9 +65,16 @@ export function OfferCard({ offer }: OfferCardProps) {
           </div>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-slate-500">
-              {offer.provider}
-            </p>
+            {providerSlug ? (
+              <Link
+                href={`/brands/${providerSlug}`}
+                className="block truncate rounded-sm text-sm font-medium text-slate-500 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                {offer.provider}
+              </Link>
+            ) : (
+              <p className="truncate text-sm font-medium text-slate-500">{offer.provider}</p>
+            )}
             {offer.category ? (
               <p className="mt-0.5 truncate text-xs font-medium text-primary">
                 {offer.category.name}
