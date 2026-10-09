@@ -20,7 +20,7 @@ test("offer provider links to its canonical brand page", async ({ page }) => {
   await expect(brandLink).toHaveAttribute("href", "/brands/github");
 
   await page.goto("/brands/github");
-  await expect(page.getByRole("heading", { name: "GitHub" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "GitHub", exact: true })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "GitHub Student Developer Pack" }).first(),
   ).toBeVisible();
