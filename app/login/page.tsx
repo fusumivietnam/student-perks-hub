@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signIn, signUp } from "@/app/login/actions";
@@ -70,7 +71,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </label>
 
         <label className="grid gap-1.5 text-sm font-medium">
-          Mật khẩu
+          <span className="flex items-center justify-between gap-3">
+            <span>Mật khẩu</span>
+            <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">
+              Quên mật khẩu?
+            </Link>
+          </span>
           <input
             type="password"
             name="password"
