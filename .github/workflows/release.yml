@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -104,20 +104,20 @@ jobs:
 
       - name: Checkout exact release SHA
         if: inputs.apply_migrations
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate.outputs.release_sha }}
 
       - name: Set up pnpm
         if: inputs.apply_migrations
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
         if: inputs.apply_migrations
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -176,18 +176,18 @@ jobs:
 
     steps:
       - name: Checkout exact release SHA
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate.outputs.release_sha }}
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -209,19 +209,19 @@ jobs:
         shell: bash
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID || secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
         run: |
           set -euo pipefail
           test -n "${VERCEL_TOKEN}"
           test -n "${VERCEL_ORG_ID}"
           test -n "${VERCEL_PROJECT_ID}"
-          vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
+          vercel pull --yes --environment=production
 
       - name: Build Production Vercel artifact
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel build --prod --token="${VERCEL_TOKEN}"
+        run: vercel build --prod
 
       - name: Deploy immutable Production artifact
         id: deploy
@@ -230,7 +230,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           set -euo pipefail
-          deployment_url="$(vercel deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}" | tail -n 1)"
+          deployment_url="$(vercel deploy --prebuilt --prod --yes | tail -n 1)"
           [[ "${deployment_url}" =~ ^https:// ]] || { echo "Could not resolve deployment URL: ${deployment_url}"; exit 1; }
           echo "url=${deployment_url}" >> "$GITHUB_OUTPUT"
 
@@ -244,12 +244,12 @@ jobs:
 
     steps:
       - name: Checkout exact release SHA
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate.outputs.release_sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
 
@@ -262,9 +262,51 @@ jobs:
         run: node scripts/smoke-release.mjs
 
       - name: Upload release evidence
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: release-evidence-production-${{ needs.validate.outputs.release_sha }}
           path: release-evidence.json
           if-no-files-found: error
           retention-days: 30
+
+  release-gate:
+    name: Release Gate
+    needs: [validate, migration-plan, deploy, smoke]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Validate terminal release state
+        shell: bash
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          MIGRATION_RESULT: ${{ needs.migration-plan.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          DEPLOYMENT_URL: ${{ needs.deploy.outputs.deployment_url }}
+          RELEASE_SHA: ${{ needs.validate.outputs.release_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          [[ "${VALIDATE_RESULT}" == "success" ]]
+          [[ "${MIGRATION_RESULT}" == "success" ]]
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            [[ "${DEPLOY_RESULT}" == "skipped" ]]
+            [[ "${SMOKE_RESULT}" == "skipped" ]]
+            echo "Dry-run release validation completed successfully."
+            exit 0
+          fi
+
+          [[ "${DEPLOY_RESULT}" == "success" ]]
+          [[ "${SMOKE_RESULT}" == "success" ]]
+          [[ "${DEPLOYMENT_URL}" =~ ^https:// ]]
+
+          artifact_name="release-evidence-production-${RELEASE_SHA}"
+          artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100")"
+          jq -e --arg name "${artifact_name}" '.artifacts | any(.name == $name and .expired == false)' <<< "${artifacts}" >/dev/null
+
+          echo "Production release completed with deploy, smoke, and evidence artifact."
