@@ -1,0 +1,152 @@
+name: Release Command Bridge
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: release-command-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: Validate and dispatch Production release
+    if: github.event.issue.title == '[release] production'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Authorize release requester
+        shell: bash
+        env:
+          REQUESTER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          [[ "${REQUESTER}" == "fusumivietnam" ]] || {
+            echo "Only the repository owner automation identity may request a Production release."
+            exit 1
+          }
+
+      - name: Parse and validate release request
+        id: request
+        shell: bash
+        env:
+          REQUEST_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+
+          extract_one() {
+            local key="$1"
+            local count value
+            count="$(printf '%s\n' "${REQUEST_BODY}" | grep -Ec "^${key}=" || true)"
+            [[ "${count}" == "1" ]] || {
+              echo "Expected exactly one ${key}=... line; found ${count}."
+              exit 1
+            }
+            value="$(printf '%s\n' "${REQUEST_BODY}" | sed -n "s/^${key}=//p")"
+            printf '%s' "${value}"
+          }
+
+          commit_sha="$(extract_one commit_sha)"
+          apply_migrations="$(extract_one apply_migrations)"
+          migration_class="$(extract_one migration_class)"
+          dry_run="$(extract_one dry_run)"
+
+          [[ "${commit_sha}" =~ ^[0-9a-fA-F]{40}$ ]] || {
+            echo "commit_sha must be a full 40-character Git SHA."
+            exit 1
+          }
+          [[ "${apply_migrations}" == "true" || "${apply_migrations}" == "false" ]] || {
+            echo "apply_migrations must be true or false."
+            exit 1
+          }
+          [[ "${dry_run}" == "true" || "${dry_run}" == "false" ]] || {
+            echo "dry_run must be true or false."
+            exit 1
+          }
+          case "${migration_class}" in
+            none|backward-compatible|coordinated|destructive) ;;
+            *) echo "Invalid migration_class: ${migration_class}"; exit 1 ;;
+          esac
+
+          if [[ "${apply_migrations}" == "false" && "${migration_class}" != "none" ]]; then
+            echo "apply_migrations=false requires migration_class=none."
+            exit 1
+          fi
+          if [[ "${apply_migrations}" == "true" && "${migration_class}" == "none" ]]; then
+            echo "apply_migrations=true requires a non-none migration class."
+            exit 1
+          fi
+          if [[ "${dry_run}" == "false" && "${apply_migrations}" == "true" && "${migration_class}" != "backward-compatible" ]]; then
+            echo "Only backward-compatible migrations may be applied automatically."
+            exit 1
+          fi
+
+          echo "commit_sha=${commit_sha}" >> "$GITHUB_OUTPUT"
+          echo "apply_migrations=${apply_migrations}" >> "$GITHUB_OUTPUT"
+          echo "migration_class=${migration_class}" >> "$GITHUB_OUTPUT"
+          echo "dry_run=${dry_run}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Validate exact SHA provenance before dispatch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.request.outputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          git cat-file -e "${RELEASE_SHA}^{commit}"
+          git merge-base --is-ancestor "${RELEASE_SHA}" origin/main || {
+            echo "Release SHA must be reachable from protected main."
+            exit 1
+          }
+
+          payload="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${RELEASE_SHA}&per_page=100")"
+          jq -e '.workflow_runs | any(.name == "CI" and .head_sha == env.RELEASE_SHA and .conclusion == "success")' <<< "${payload}" >/dev/null
+          jq -e '.workflow_runs | any(.name == "CodeQL" and .head_sha == env.RELEASE_SHA and .conclusion == "success")' <<< "${payload}" >/dev/null
+
+      - name: Dispatch protected Release workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.request.outputs.commit_sha }}
+          APPLY_MIGRATIONS: ${{ steps.request.outputs.apply_migrations }}
+          MIGRATION_CLASS: ${{ steps.request.outputs.migration_class }}
+          DRY_RUN: ${{ steps.request.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          payload="$(jq -n \
+            --arg ref "main" \
+            --arg commit_sha "${RELEASE_SHA}" \
+            --arg apply_migrations "${APPLY_MIGRATIONS}" \
+            --arg migration_class "${MIGRATION_CLASS}" \
+            --arg dry_run "${DRY_RUN}" \
+            '{ref:$ref, inputs:{commit_sha:$commit_sha, apply_migrations:$apply_migrations, migration_class:$migration_class, dry_run:$dry_run}}')"
+
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/release.yml/dispatches" \
+            --input - <<< "${payload}"
+
+      - name: Record accepted release request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RELEASE_SHA: ${{ steps.request.outputs.commit_sha }}
+          APPLY_MIGRATIONS: ${{ steps.request.outputs.apply_migrations }}
+          MIGRATION_CLASS: ${{ steps.request.outputs.migration_class }}
+          DRY_RUN: ${{ steps.request.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body "Release request accepted and dispatched.\n\n- Exact SHA: \`${RELEASE_SHA}\`\n- Apply migrations: \`${APPLY_MIGRATIONS}\`\n- Migration class: \`${MIGRATION_CLASS}\`\n- Dry run: \`${DRY_RUN}\`\n\nThe protected Release workflow remains responsible for provenance, Production deployment, smoke checks, evidence, and the terminal Release Gate."
