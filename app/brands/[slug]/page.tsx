@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { OfferCard } from "@/components/offers/offer-card";
-import { getBrandBySlug, getPublishedBrands } from "@/lib/queries/brands";
+import { getBrandBySlug } from "@/lib/queries/brands";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +21,6 @@ export async function generateMetadata({
     description: `Các ưu đãi sinh viên đã publish từ ${brand.name}.`,
     alternates: { canonical: `/brands/${brand.slug}` },
   };
-}
-
-export async function generateStaticParams() {
-  try {
-    const brands = await getPublishedBrands();
-    return brands.map((brand) => ({ slug: brand.slug }));
-  } catch {
-    return [];
-  }
 }
 
 export default async function BrandPage({
