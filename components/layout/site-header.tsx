@@ -7,6 +7,7 @@ import { getCurrentAuth } from "@/lib/auth";
 const navItems = [
   { href: "/", label: "Trang chủ" },
   { href: "/offers", label: "Tất cả ưu đãi" },
+  { href: "/search", label: "Tìm kiếm" },
   { href: "/categories", label: "Danh mục" },
   { href: "/saved", label: "Đã lưu" },
   { href: "/submit", label: "Gửi ưu đãi" },
