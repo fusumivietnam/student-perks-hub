@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
+import { startSupabase } from "./ci-supabase-start.mjs";
 
 function run(args, options = {}) {
   const result = spawnSync("pnpm", ["exec", "supabase", ...args], {
@@ -25,7 +26,7 @@ writeFileSync(
 );
 
 console.log("Starting minimal local Supabase stack for browser E2E...");
-run(
+await startSupabase(
   [
     "start",
     "-x",
@@ -42,7 +43,7 @@ run(
       "supavisor",
     ].join(","),
   ],
-  { stdio: "inherit" },
+  { label: "Minimal E2E Supabase" },
 );
 
 const status = run(["status", "-o", "env"]);

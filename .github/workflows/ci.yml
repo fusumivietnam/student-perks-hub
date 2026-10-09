@@ -52,13 +52,13 @@ jobs:
 
           printf '%s\n' "${changed_files}"
 
-          if grep -Eq '^(supabase/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          if grep -Eq '^(supabase/|scripts/ci-supabase-start\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "database=true" >> "$GITHUB_OUTPUT"
           else
             echo "database=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/e2e-(setup|start)\.mjs$|(playwright\.config\.mjs|lighthouserc\.cjs)$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/(ci-supabase-start|e2e-(setup|start))\.mjs$|(playwright\.config\.mjs|lighthouserc\.cjs)$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "e2e=false" >> "$GITHUB_OUTPUT"
@@ -113,7 +113,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 18
 
     steps:
       - name: Checkout
@@ -135,8 +135,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Start local Postgres
-        run: pnpm exec supabase db start
+      - name: Start local Postgres with cleanup/retry
+        run: node scripts/ci-supabase-start.mjs db
 
       - name: Rebuild database from migrations and seed
         run: pnpm db:reset
@@ -164,7 +164,6 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       PLAYWRIGHT_VERSION: "1.63.0"
       AXE_PLAYWRIGHT_VERSION: "4.13.0"
-      LHCI_VERSION: "0.15.1"
       SUPABASE_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -193,8 +192,7 @@ jobs:
           set -euo pipefail
           pnpm add --save-dev --ignore-workspace-root-check --lockfile=false \
             "@playwright/test@${PLAYWRIGHT_VERSION}" \
-            "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}" \
-            "@lhci/cli@${LHCI_VERSION}"
+            "@axe-core/playwright@${AXE_PLAYWRIGHT_VERSION}"
           git checkout -- package.json
 
       - name: Restore Chromium cache
@@ -232,16 +230,6 @@ jobs:
       - name: Run critical browser flows
         run: pnpm exec playwright test
 
-      - name: Run Lighthouse performance budget
-        shell: bash
-        run: |
-          set -euo pipefail
-          chrome_path="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          if [[ -n "${chrome_path}" ]]; then
-            export CHROME_PATH="${chrome_path}"
-          fi
-          pnpm exec lhci autorun --config=./lighthouserc.cjs
-
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -250,7 +238,87 @@ jobs:
           path: |
             playwright-report/
             test-results/
-            .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm local:stop
+
+  lighthouse:
+    name: Lighthouse budget
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      LHCI_VERSION: "0.15.1"
+      SUPABASE_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.8.1
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install repository dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install pinned Lighthouse CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm add --save-dev --ignore-workspace-root-check --lockfile=false \
+            "@lhci/cli@${LHCI_VERSION}"
+          git checkout -- package.json
+
+      - name: Start minimal local Supabase
+        run: node scripts/e2e-start.mjs
+
+      - name: Rebuild deterministic database
+        run: pnpm db:reset
+
+      - name: Restore Next.js production build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-lighthouse-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('app/**/*', 'components/**/*', 'lib/**/*', 'next.config.*') }}
+          restore-keys: |
+            ${{ runner.os }}-lighthouse-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build production application
+        run: pnpm build
+
+      - name: Run Lighthouse performance budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome_path="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [[ -z "${chrome_path}" ]]; then
+            echo "No system Chrome/Chromium found on the pinned runner." >&2
+            exit 1
+          fi
+          export CHROME_PATH="${chrome_path}"
+          pnpm exec lhci autorun --config=./lighthouserc.cjs
+
+      - name: Upload Lighthouse diagnostics
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: lighthouse-failure-${{ github.run_id }}
+          path: .lighthouseci/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -260,7 +328,7 @@ jobs:
 
   gate:
     name: CI Gate
-    needs: [changes, verify, database, e2e]
+    needs: [changes, verify, database, e2e, lighthouse]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -273,6 +341,7 @@ jobs:
           VERIFY_RESULT: ${{ needs.verify.result }}
           DATABASE_RESULT: ${{ needs.database.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
+          LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
         run: |
           set -euo pipefail
 
@@ -280,3 +349,4 @@ jobs:
           [[ "${VERIFY_RESULT}" == "success" ]]
           [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
           [[ "${E2E_RESULT}" == "success" || "${E2E_RESULT}" == "skipped" ]]
+          [[ "${LIGHTHOUSE_RESULT}" == "success" || "${LIGHTHOUSE_RESULT}" == "skipped" ]]
