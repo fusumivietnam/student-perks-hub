@@ -9,6 +9,13 @@ import { createClient } from "@/lib/supabase/server";
 const submissionReviewSchema = z.object({
   submissionId: z.string().uuid(),
   status: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().max(1000).optional(),
+});
+
+const submissionDraftSchema = z.object({
+  submissionId: z.string().uuid(),
+  slug: z.string().trim().min(2).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  categoryId: z.string().uuid().optional(),
 });
 
 const categorySchema = z.object({
@@ -49,25 +56,48 @@ function optionalText(value: FormDataEntryValue | null) {
 }
 
 export async function reviewSubmission(formData: FormData) {
-  const admin = await requireAdmin();
+  await requireAdmin();
   const parsed = submissionReviewSchema.safeParse({
     submissionId: formData.get("submissionId"),
     status: formData.get("status"),
+    reviewNote: optionalText(formData.get("reviewNote")),
   });
   if (!parsed.success) throw new Error("Invalid submission review request");
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("submissions")
-    .update({
-      status: parsed.data.status,
-      reviewed_by: admin.id,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", parsed.data.submissionId);
+  const { data, error } = await supabase.rpc("review_submission", {
+    p_submission_id: parsed.data.submissionId,
+    p_status: parsed.data.status,
+    p_review_note: parsed.data.reviewNote,
+  });
 
   if (error) throw new Error("Could not review submission");
+  if (!data) throw new Error("Submission was already reviewed or cancelled");
+
   revalidatePath("/admin");
+  revalidatePath("/account");
+}
+
+export async function createDraftFromSubmission(formData: FormData) {
+  await requireAdmin();
+  const parsed = submissionDraftSchema.safeParse({
+    submissionId: formData.get("submissionId"),
+    slug: formData.get("slug"),
+    categoryId: optionalText(formData.get("categoryId")),
+  });
+  if (!parsed.success) throw new Error("Invalid draft conversion request");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("create_draft_offer_from_submission", {
+    p_submission_id: parsed.data.submissionId,
+    p_slug: parsed.data.slug,
+    p_category_id: parsed.data.categoryId,
+  });
+
+  if (error) throw new Error("Could not create draft offer from submission");
+
+  revalidatePath("/admin");
+  revalidatePath("/offers");
 }
 
 export async function saveCategory(formData: FormData) {
