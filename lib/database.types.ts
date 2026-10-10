@@ -126,6 +126,7 @@ export type Database = {
           provider: string
           published_at: string | null
           slug: string
+          source_submission_id: string | null
           status: string
           summary: string
           tags: string[]
@@ -150,6 +151,7 @@ export type Database = {
           provider: string
           published_at?: string | null
           slug: string
+          source_submission_id?: string | null
           status?: string
           summary: string
           tags?: string[]
@@ -174,6 +176,7 @@ export type Database = {
           provider?: string
           published_at?: string | null
           slug?: string
+          source_submission_id?: string | null
           status?: string
           summary?: string
           tags?: string[]
@@ -187,6 +190,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_source_submission_id_fkey"
+            columns: ["source_submission_id"]
+            isOneToOne: true
+            referencedRelation: "submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -259,40 +269,49 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          normalized_official_url: string
           official_url: string
           provider: string
+          review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
           submitter_note: string | null
           submitter_user_id: string | null
           title: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          normalized_official_url?: never
           official_url: string
           provider: string
+          review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           submitter_note?: string | null
           submitter_user_id?: string | null
           title: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          normalized_official_url?: never
           official_url?: string
           provider?: string
+          review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           submitter_note?: string | null
           submitter_user_id?: string | null
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -301,7 +320,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cancel_own_submission: {
+        Args: { p_submission_id: string }
+        Returns: boolean
+      }
+      create_draft_offer_from_submission: {
+        Args: {
+          p_category_id?: string
+          p_slug: string
+          p_submission_id: string
+        }
+        Returns: string
+      }
+      review_submission: {
+        Args: {
+          p_review_note?: string
+          p_status: string
+          p_submission_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
@@ -416,7 +454,7 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (DefaultSchemaCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
@@ -437,4 +475,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
