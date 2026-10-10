@@ -49,6 +49,12 @@ export async function submitOffer(formData: FormData) {
     submitter_note: parsed.data.submitterNote || null,
   });
 
+  if (error?.code === "23505") {
+    redirect(
+      "/submit?error=Link+này+đã+có+một+đề+xuất+đang+được+xử+lý+hoặc+đã+được+duyệt",
+    );
+  }
+
   if (error) {
     console.error("Failed to create offer submission", error);
     redirect("/submit?error=Không+thể+gửi+đề+xuất+lúc+này");
