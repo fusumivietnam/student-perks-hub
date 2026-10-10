@@ -16,6 +16,8 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
+const submissionIdSchema = z.string().uuid();
+
 export async function updatePassword(formData: FormData) {
   const auth = await getCurrentAuth();
   if (!auth) redirect("/login?next=/account");
@@ -40,4 +42,30 @@ export async function updatePassword(formData: FormData) {
   }
 
   redirect("/account?success=Mật+khẩu+đã+được+cập+nhật");
+}
+
+export async function cancelSubmission(formData: FormData) {
+  const auth = await getCurrentAuth();
+  if (!auth) redirect("/login?next=/account");
+
+  const parsed = submissionIdSchema.safeParse(formData.get("submissionId"));
+  if (!parsed.success) {
+    redirect("/account?error=Yêu+cầu+hủy+không+hợp+lệ");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cancel_own_submission", {
+    p_submission_id: parsed.data,
+  });
+
+  if (error) {
+    console.error("Failed to cancel submission", error);
+    redirect("/account?error=Không+thể+hủy+đề+xuất+lúc+này");
+  }
+
+  if (!data) {
+    redirect("/account?error=Đề+xuất+đã+được+xử+lý+hoặc+không+còn+có+thể+hủy");
+  }
+
+  redirect("/account?success=Đề+xuất+đã+được+hủy");
 }
