@@ -60,5 +60,9 @@ export async function submitOffer(formData: FormData) {
     redirect("/submit?error=Không+thể+gửi+đề+xuất+lúc+này");
   }
 
+  if (auth) {
+    redirect("/account/submissions?submitted=1");
+  }
+
   redirect("/submit?success=1");
 }
