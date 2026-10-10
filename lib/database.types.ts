@@ -195,7 +195,7 @@ export type Database = {
           {
             foreignKeyName: "offers_source_submission_id_fkey"
             columns: ["source_submission_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "submissions"
             referencedColumns: ["id"]
           },
@@ -269,7 +269,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          normalized_official_url: string
+          normalized_official_url: string | null
           official_url: string
           provider: string
           review_note: string | null
@@ -285,7 +285,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          normalized_official_url?: never
+          normalized_official_url?: string | null
           official_url: string
           provider: string
           review_note?: string | null
@@ -301,7 +301,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          normalized_official_url?: never
+          normalized_official_url?: string | null
           official_url?: string
           provider?: string
           review_note?: string | null
@@ -475,3 +475,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
