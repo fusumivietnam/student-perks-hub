@@ -5,7 +5,8 @@ import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
 
 const adminNav = [
-  { href: "/admin", label: "Moderation" },
+  { href: "/admin", label: "Content" },
+  { href: "/admin/submissions", label: "Submissions" },
   { href: "/admin/verifications", label: "Xác minh sinh viên" },
 ];
 

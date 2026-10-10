@@ -32,6 +32,12 @@ export async function SiteHeader() {
         {auth ? (
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
+              href="/account/submissions"
+              className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
+            >
+              Đề xuất
+            </Link>
+            <Link
               href="/account"
               className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >

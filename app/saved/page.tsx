@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { updateBookmark } from "@/app/saved/actions";
 import { OfferCard } from "@/components/offers/offer-card";
 import { getCurrentAuth } from "@/lib/auth";
 import { getSavedOffers } from "@/lib/queries/bookmarks";
@@ -41,7 +42,17 @@ export default async function SavedPage() {
       ) : (
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (
-            <OfferCard key={offer.id} offer={offer} />
+            <div key={offer.id} className="grid gap-2">
+              <OfferCard offer={offer} />
+              <form action={updateBookmark}>
+                <input type="hidden" name="offerId" value={offer.id} />
+                <input type="hidden" name="slug" value={offer.slug} />
+                <input type="hidden" name="intent" value="remove" />
+                <button className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                  Bỏ khỏi danh sách đã lưu
+                </button>
+              </form>
+            </div>
           ))}
         </div>
       )}

@@ -156,13 +156,14 @@ select lives_ok(
   'admin can publish offers'
 );
 
-select lives_ok(
-  $$update public.submissions
-    set status = 'approved',
-        reviewed_by = '11111111-1111-1111-1111-111111111111'::uuid,
-        reviewed_at = now()
-    where id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid$$,
-  'admin can review submissions'
+select is(
+  public.review_submission(
+    'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,
+    'approved',
+    'Reviewed through CAS function'
+  ),
+  true,
+  'admin can review pending submissions through hardened RPC'
 );
 
 select results_eq(
