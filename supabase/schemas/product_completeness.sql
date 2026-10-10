@@ -27,7 +27,7 @@ create unique index if not exists offers_source_submission_id_uidx
 
 revoke update on table public.submissions from authenticated;
 
-create or replace function public.cancel_own_submission(p_submission_id uuid)
+create or replace function private.cancel_own_submission(p_submission_id uuid)
 returns boolean
 language plpgsql
 security definer
@@ -51,10 +51,22 @@ begin
 end;
 $$;
 
+revoke all on function private.cancel_own_submission(uuid) from public, anon;
+grant execute on function private.cancel_own_submission(uuid) to authenticated;
+
+create or replace function public.cancel_own_submission(p_submission_id uuid)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.cancel_own_submission(p_submission_id);
+$$;
+
 revoke all on function public.cancel_own_submission(uuid) from public, anon;
 grant execute on function public.cancel_own_submission(uuid) to authenticated;
 
-create or replace function public.review_submission(
+create or replace function private.review_submission(
   p_submission_id uuid,
   p_status text,
   p_review_note text default null
@@ -89,10 +101,26 @@ begin
 end;
 $$;
 
+revoke all on function private.review_submission(uuid, text, text) from public, anon;
+grant execute on function private.review_submission(uuid, text, text) to authenticated;
+
+create or replace function public.review_submission(
+  p_submission_id uuid,
+  p_status text,
+  p_review_note text default null
+)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.review_submission(p_submission_id, p_status, p_review_note);
+$$;
+
 revoke all on function public.review_submission(uuid, text, text) from public, anon;
 grant execute on function public.review_submission(uuid, text, text) to authenticated;
 
-create or replace function public.create_draft_offer_from_submission(
+create or replace function private.create_draft_offer_from_submission(
   p_submission_id uuid,
   p_slug text,
   p_category_id uuid default null
@@ -153,6 +181,26 @@ begin
 
   return created_offer_id;
 end;
+$$;
+
+revoke all on function private.create_draft_offer_from_submission(uuid, text, uuid) from public, anon;
+grant execute on function private.create_draft_offer_from_submission(uuid, text, uuid) to authenticated;
+
+create or replace function public.create_draft_offer_from_submission(
+  p_submission_id uuid,
+  p_slug text,
+  p_category_id uuid default null
+)
+returns uuid
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.create_draft_offer_from_submission(
+    p_submission_id,
+    p_slug,
+    p_category_id
+  );
 $$;
 
 revoke all on function public.create_draft_offer_from_submission(uuid, text, uuid) from public, anon;
