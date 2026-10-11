@@ -28,13 +28,13 @@ if (isCodespaces && !codespaceName) {
 const appUrl = isCodespaces
   ? `https://${codespaceName}-3000.${forwardingDomain}`
   : "http://127.0.0.1:3000";
-const authCallbackUrl = `${appUrl}/auth/callback`;
+const recoveryRedirectUrl = `${appUrl}/auth/callback?next=/reset-password`;
 
 writeFileSync(
   ".env",
   [
     `SUPABASE_AUTH_SITE_URL=${appUrl}`,
-    `SUPABASE_AUTH_REDIRECT_URL=${authCallbackUrl}`,
+    `SUPABASE_AUTH_REDIRECT_URL=${recoveryRedirectUrl}`,
     "",
   ].join("\n"),
   "utf8",
