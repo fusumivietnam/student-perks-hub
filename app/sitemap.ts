@@ -12,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from("offers")
     .select("slug,provider,updated_at,published_at")
     .eq("status", "published")
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order("published_at", { ascending: false });
 
   if (error) {
