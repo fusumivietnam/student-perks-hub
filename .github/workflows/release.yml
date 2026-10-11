@@ -142,48 +142,72 @@ jobs:
           set -euo pipefail
           test -n "${SUPABASE_DB_URL}"
 
+          local_file="$(mktemp)"
+          cli_local_file="$(mktemp)"
+          remote_file="$(mktemp)"
+          normalized_file="$(mktemp)"
+
+          find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sed -nE 's/^([0-9]{14})_.*/\1/p' \
+            | sort -u > "${local_file}"
+          [[ -s "${local_file}" ]] || { echo "No local timestamped migrations found."; exit 1; }
+
           migration_output="$(pnpm exec supabase migration list --db-url "${SUPABASE_DB_URL}")"
           printf '%s\n' "${migration_output}"
+          printf '%s\n' "${migration_output}" | sed 's/│/|/g' > "${normalized_file}"
 
-          mismatches="$(printf '%s\n' "${migration_output}" | awk -F '│' '
+          awk -F '|' '
             NF >= 2 {
               local_version=$1
               remote_version=$2
               gsub(/[^0-9]/, "", local_version)
               gsub(/[^0-9]/, "", remote_version)
-              if ((length(local_version) == 14 || length(remote_version) == 14) && local_version != remote_version) {
-                print local_version "|" remote_version
-              }
+              if (length(local_version) == 14) print local_version > local_out
+              if (length(remote_version) == 14) print remote_version > remote_out
             }
-          ')"
+          ' local_out="${cli_local_file}" remote_out="${remote_file}" "${normalized_file}"
 
-          local_only="$(printf '%s\n' "${mismatches}" | awk -F '|' '$1 != "" && $2 == "" { print $1 }')"
-          remote_only="$(printf '%s\n' "${mismatches}" | awk -F '|' '$1 == "" && $2 != "" { print $2 }')"
-          local_head="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -nE 's/^([0-9]{14})_.*/\1/p' | sort | tail -n 1)"
-          remote_head="$(printf '%s\n' "${migration_output}" | awk -F '│' '
-            NF >= 2 {
-              remote_version=$2
-              gsub(/[^0-9]/, "", remote_version)
-              if (length(remote_version) == 14) print remote_version
-            }
-          ' | sort | tail -n 1)"
+          sort -u -o "${cli_local_file}" "${cli_local_file}"
+          sort -u -o "${remote_file}" "${remote_file}"
+
+          [[ -s "${cli_local_file}" ]] || {
+            echo "Could not parse local migration history from Supabase CLI output. Failing closed."
+            exit 1
+          }
+          [[ -s "${remote_file}" ]] || {
+            echo "Could not parse Production migration history from Supabase CLI output. Failing closed."
+            exit 1
+          }
+          cmp -s "${local_file}" "${cli_local_file}" || {
+            echo "Supabase CLI local migration history does not match release-SHA migration files. Failing closed."
+            echo "Repository migrations:"; cat "${local_file}"
+            echo "CLI local migrations:"; cat "${cli_local_file}"
+            exit 1
+          }
+
+          local_only="$(comm -23 "${local_file}" "${remote_file}")"
+          remote_only="$(comm -13 "${local_file}" "${remote_file}")"
+          local_head="$(tail -n 1 "${local_file}")"
+          remote_head="$(tail -n 1 "${remote_file}")"
           pending_count="$(printf '%s\n' "${local_only}" | sed '/^$/d' | wc -l | tr -d ' ')"
 
-          echo "local_head=${local_head}" >> "$GITHUB_OUTPUT"
-          echo "remote_head=${remote_head}" >> "$GITHUB_OUTPUT"
-          echo "pending_count=${pending_count}" >> "$GITHUB_OUTPUT"
+          [[ "${local_head}" =~ ^[0-9]{14}$ ]]
+          [[ "${remote_head}" =~ ^[0-9]{14}$ ]] || { echo "Production migration head is invalid. Failing closed."; exit 1; }
 
           if [[ -n "${remote_only}" ]]; then
             echo "Production migration history contains versions absent from the release SHA:"
             printf '%s\n' "${remote_only}"
             exit 1
           fi
-
           if [[ -n "${local_only}" && "${APPLY_MIGRATIONS}" != "true" ]]; then
             echo "Release requested apply_migrations=false but Production is missing repository migrations:"
             printf '%s\n' "${local_only}"
             exit 1
           fi
+
+          echo "local_head=${local_head}" >> "$GITHUB_OUTPUT"
+          echo "remote_head=${remote_head}" >> "$GITHUB_OUTPUT"
+          echo "pending_count=${pending_count}" >> "$GITHUB_OUTPUT"
 
           if [[ -z "${local_only}" ]]; then
             echo "Repository and Production migration histories are synchronized at ${local_head}."
@@ -217,24 +241,32 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
+          local_file="$(mktemp)"
+          cli_local_file="$(mktemp)"
+          remote_file="$(mktemp)"
+          normalized_file="$(mktemp)"
+
+          find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sed -nE 's/^([0-9]{14})_.*/\1/p' \
+            | sort -u > "${local_file}"
           migration_output="$(pnpm exec supabase migration list --db-url "${SUPABASE_DB_URL}")"
           printf '%s\n' "${migration_output}"
-          mismatches="$(printf '%s\n' "${migration_output}" | awk -F '│' '
+          printf '%s\n' "${migration_output}" | sed 's/│/|/g' > "${normalized_file}"
+          awk -F '|' '
             NF >= 2 {
               local_version=$1
               remote_version=$2
               gsub(/[^0-9]/, "", local_version)
               gsub(/[^0-9]/, "", remote_version)
-              if ((length(local_version) == 14 || length(remote_version) == 14) && local_version != remote_version) {
-                print local_version "|" remote_version
-              }
+              if (length(local_version) == 14) print local_version > local_out
+              if (length(remote_version) == 14) print remote_version > remote_out
             }
-          ')"
-          [[ -z "${mismatches}" ]] || {
-            echo "Migration history is still divergent after apply:"
-            printf '%s\n' "${mismatches}"
-            exit 1
-          }
+          ' local_out="${cli_local_file}" remote_out="${remote_file}" "${normalized_file}"
+          sort -u -o "${cli_local_file}" "${cli_local_file}"
+          sort -u -o "${remote_file}" "${remote_file}"
+          [[ -s "${cli_local_file}" && -s "${remote_file}" ]] || { echo "Could not parse migration history after apply. Failing closed."; exit 1; }
+          cmp -s "${local_file}" "${cli_local_file}" || { echo "CLI local history differs from repository after apply."; exit 1; }
+          cmp -s "${local_file}" "${remote_file}" || { echo "Production migration history is still divergent after apply."; exit 1; }
 
       - name: Record resolved migration state
         id: final-state
@@ -249,6 +281,8 @@ jobs:
           set -euo pipefail
           state="synced"
           remote_head="${PRE_REMOTE_HEAD}"
+          [[ "${LOCAL_HEAD}" =~ ^[0-9]{14}$ ]]
+          [[ "${remote_head}" =~ ^[0-9]{14}$ ]] || { echo "Remote migration head missing or invalid. Failing closed."; exit 1; }
 
           if [[ "${APPLY_MIGRATIONS}" == "true" && "${PENDING_COUNT}" != "0" ]]; then
             if [[ "${DRY_RUN}" == "true" ]]; then
@@ -459,7 +493,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
           [[ "${VALIDATE_RESULT}" == "success" ]]
           [[ "${MIGRATION_RESULT}" == "success" ]]
 
@@ -477,5 +510,4 @@ jobs:
           artifact_name="release-evidence-production-${RELEASE_SHA}"
           artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100")"
           jq -e --arg name "${artifact_name}" '.artifacts | any(.name == $name and .expired == false)' <<< "${artifacts}" >/dev/null
-
           echo "Production release completed with deploy, smoke, and evidence artifact."
