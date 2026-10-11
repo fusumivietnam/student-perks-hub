@@ -15,6 +15,10 @@ const offerCardSelect = `
   )
 `;
 
+function activeExpiryFilter() {
+  return `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
+}
+
 export async function getFeaturedOffers(limit = 3) {
   const supabase = await createClient();
 
@@ -22,6 +26,7 @@ export async function getFeaturedOffers(limit = 3) {
     .from("offers")
     .select(offerCardSelect)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .eq("is_featured", true)
     .order("published_at", { ascending: false })
     .order("title")
@@ -42,6 +47,7 @@ export async function getPopularOffers(limit = 3) {
     .from("offers")
     .select(offerCardSelect)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .order("view_count", { ascending: false })
     .order("published_at", { ascending: false })
     .order("title")
@@ -62,6 +68,7 @@ export async function getRecentOffers(limit = 3) {
     .from("offers")
     .select(offerCardSelect)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .order("published_at", { ascending: false })
     .order("title")
     .limit(limit);
@@ -73,7 +80,6 @@ export async function getRecentOffers(limit = 3) {
 
   return data;
 }
-
 
 export async function getOfferBySlug(slug: string) {
   const supabase = await createClient();
@@ -97,6 +103,8 @@ export async function getOfferBySlug(slug: string) {
       audience,
       tags,
       last_verified_at,
+      verification_interval_days,
+      expires_at,
       published_at,
       category:categories (
         name,
@@ -105,6 +113,7 @@ export async function getOfferBySlug(slug: string) {
     `)
     .eq("slug", slug)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .maybeSingle();
 
   if (error) {
@@ -128,6 +137,7 @@ export async function getRelatedOffers(
     .from("offers")
     .select(offerCardSelect)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .eq("category_id", categoryId)
     .neq("id", offerId)
     .order("published_at", { ascending: false })
