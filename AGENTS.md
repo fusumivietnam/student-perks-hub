@@ -53,6 +53,20 @@ Before adding a package:
 
 If one of them solves the requirement, do not add the package.
 
+## Context retrieval
+
+Keep coding-agent context minimal and verifiable.
+
+- For an unfamiliar concept, behavior, or implementation location, prefer `ccc search <concept>` when `ccc` is available. Use natural-language intent rather than guessing identifiers.
+- Treat CocoIndex Code results as discovery hints only. Before editing, read the exact current file and surrounding lines from the working tree or GitHub source of truth.
+- Use exact text/identifier search for known symbols, filenames, error messages, or literals; semantic search is not a replacement for deterministic grep.
+- Use Understand Anything (`$understand`, `$understand-explain`, `$understand-domain`) for broad architecture, domains, onboarding, and knowledge-graph questions rather than duplicating that work with repeated semantic searches.
+- Refresh CocoIndex after significant edits with `ccc index` or `ccc search --refresh ...`; consecutive searches do not need a refresh when the code has not changed.
+- If CocoIndex is unavailable or fails, fall back to normal repository search without blocking the task.
+- Never commit `.cocoindex_code/` artifacts and never add CocoIndex indexing to CI, Release, Supabase, or Production runtime.
+
+See `docs/context-retrieval.md` for the Codespaces setup and operating model.
+
 ## Scope
 
 Do not:
