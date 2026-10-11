@@ -16,7 +16,7 @@ jobs:
   backup:
     name: Create encrypted logical backup
     if: github.event_name == 'workflow_dispatch' || vars.DATABASE_BACKUP_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
     env:
@@ -25,16 +25,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -66,7 +66,7 @@ jobs:
         run: sha256sum --check "${{ steps.backup.outputs.checksum }}"
 
       - name: Upload encrypted backup only
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: production-database-backup-${{ github.run_id }}
           path: |
@@ -85,6 +85,7 @@ jobs:
             echo "- Encryption: AES-256-CBC / PBKDF2"
             echo "- Artifact retention: 30 days"
             echo "- Raw SQL uploaded: no"
+            echo "- Runner: ubuntu-24.04"
             echo "- Workflow run: \`${GITHUB_RUN_ID}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
