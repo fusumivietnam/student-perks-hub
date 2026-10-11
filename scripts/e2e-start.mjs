@@ -18,10 +18,15 @@ function run(args, options = {}) {
 }
 
 const appUrl = "http://127.0.0.1:3000";
+const authCallbackUrl = `${appUrl}/auth/callback`;
 
 writeFileSync(
   ".env",
-  `SUPABASE_AUTH_SITE_URL=${appUrl}\n`,
+  [
+    `SUPABASE_AUTH_SITE_URL=${appUrl}`,
+    `SUPABASE_AUTH_REDIRECT_URL=${authCallbackUrl}`,
+    "",
+  ].join("\n"),
   "utf8",
 );
 
@@ -71,6 +76,7 @@ if (!publishableKey) {
 writeFileSync(
   ".env.local",
   [
+    `NEXT_PUBLIC_SITE_URL=${appUrl}`,
     `NEXT_PUBLIC_SUPABASE_URL=${internalUrl}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
     `SUPABASE_INTERNAL_URL=${internalUrl}`,
