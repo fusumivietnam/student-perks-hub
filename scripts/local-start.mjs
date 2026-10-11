@@ -28,10 +28,15 @@ if (isCodespaces && !codespaceName) {
 const appUrl = isCodespaces
   ? `https://${codespaceName}-3000.${forwardingDomain}`
   : "http://127.0.0.1:3000";
+const authCallbackUrl = `${appUrl}/auth/callback`;
 
 writeFileSync(
   ".env",
-  `SUPABASE_AUTH_SITE_URL=${appUrl}\n`,
+  [
+    `SUPABASE_AUTH_SITE_URL=${appUrl}`,
+    `SUPABASE_AUTH_REDIRECT_URL=${authCallbackUrl}`,
+    "",
+  ].join("\n"),
   "utf8",
 );
 
@@ -65,6 +70,7 @@ const publicUrl = isCodespaces ? `${appUrl}/supabase` : internalUrl;
 writeFileSync(
   ".env.local",
   [
+    `NEXT_PUBLIC_SITE_URL=${appUrl}`,
     `NEXT_PUBLIC_SUPABASE_URL=${publicUrl}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
     `SUPABASE_INTERNAL_URL=${internalUrl}`,
