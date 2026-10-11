@@ -13,6 +13,9 @@ coverage
 supabase/.temp/
 supabase/.branches/
 
+# CocoIndex Code: local settings/index/database artifacts are development-only.
+.cocoindex_code/
+
 # Understand Anything: keep the reusable graph/config, ignore local scratch data.
 .ua/intermediate/
 .ua/diff-overlay.json
