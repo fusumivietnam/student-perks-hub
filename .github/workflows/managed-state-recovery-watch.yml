@@ -2,6 +2,7 @@ name: Managed State Recovery Watch
 
 on:
   schedule:
+    # Runs after the scheduled encrypted database-backup window.
     - cron: "47 19 * * *"
   workflow_dispatch:
 
