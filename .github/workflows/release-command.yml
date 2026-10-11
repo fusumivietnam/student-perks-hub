@@ -123,6 +123,7 @@ jobs:
           APPLY_MIGRATIONS: ${{ steps.request.outputs.apply_migrations }}
           MIGRATION_CLASS: ${{ steps.request.outputs.migration_class }}
           DRY_RUN: ${{ steps.request.outputs.dry_run }}
+          RELEASE_ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
           payload="$(jq -n \
@@ -131,7 +132,8 @@ jobs:
             --arg apply_migrations "${APPLY_MIGRATIONS}" \
             --arg migration_class "${MIGRATION_CLASS}" \
             --arg dry_run "${DRY_RUN}" \
-            '{ref:$ref, inputs:{commit_sha:$commit_sha, apply_migrations:$apply_migrations, migration_class:$migration_class, dry_run:$dry_run}}')"
+            --arg release_issue_number "${RELEASE_ISSUE_NUMBER}" \
+            '{ref:$ref, inputs:{commit_sha:$commit_sha, apply_migrations:$apply_migrations, migration_class:$migration_class, dry_run:$dry_run, release_issue_number:$release_issue_number}}')"
 
           gh api \
             --method POST \
@@ -149,4 +151,15 @@ jobs:
           DRY_RUN: ${{ steps.request.outputs.dry_run }}
         run: |
           set -euo pipefail
-          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body "Release request accepted and dispatched.\n\n- Exact SHA: \`${RELEASE_SHA}\`\n- Apply migrations: \`${APPLY_MIGRATIONS}\`\n- Migration class: \`${MIGRATION_CLASS}\`\n- Dry run: \`${DRY_RUN}\`\n\nThe protected Release workflow remains responsible for provenance, Production deployment, smoke checks, evidence, and the terminal Release Gate."
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body "Release request accepted and dispatched.\n\n- Exact SHA: \`${RELEASE_SHA}\`\n- Apply migrations: \`${APPLY_MIGRATIONS}\`\n- Migration class: \`${MIGRATION_CLASS}\`\n- Dry run: \`${DRY_RUN}\`\n\nThe protected Release workflow will report its terminal state back to this issue."
+
+      - name: Record rejected release request
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body "Release request rejected by the Release Command Bridge. Review the validation failure: ${run_url}"

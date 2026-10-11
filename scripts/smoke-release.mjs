@@ -5,6 +5,8 @@ const environment = process.env.RELEASE_ENVIRONMENT;
 const releaseSha = process.env.RELEASE_SHA;
 const workflowRunId = process.env.GITHUB_RUN_ID;
 const migrationState = process.env.MIGRATION_STATE ?? "not-recorded";
+const migrationLocalHead = process.env.MIGRATION_LOCAL_HEAD ?? null;
+const migrationRemoteHead = process.env.MIGRATION_REMOTE_HEAD ?? null;
 const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 if (!baseUrl) throw new Error("DEPLOYMENT_URL is required.");
@@ -63,6 +65,8 @@ const evidence = {
   deploymentUrl: normalized,
   workflowRunId: workflowRunId ?? null,
   migrationState,
+  migrationLocalHead,
+  migrationRemoteHead,
   verifiedAt: new Date().toISOString(),
   checks: results,
 };

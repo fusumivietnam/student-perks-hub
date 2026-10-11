@@ -27,10 +27,16 @@ on:
         type: boolean
         required: true
         default: true
+      release_issue_number:
+        description: Originating [release] production issue number, when dispatched by the bridge
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
   actions: read
+  issues: write
 
 concurrency:
   group: release-production
@@ -81,6 +87,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
+    outputs:
+      migration_state: ${{ steps.final-state.outputs.state }}
+      local_migration_head: ${{ steps.final-state.outputs.local_head }}
+      remote_migration_head: ${{ steps.final-state.outputs.remote_head }}
 
     steps:
       - name: Enforce migration policy
@@ -99,24 +109,20 @@ jobs:
             fi
           else
             [[ "${MIGRATION_CLASS}" == "none" ]] || { echo "apply_migrations=false requires migration_class=none."; exit 1; }
-            echo "No Production database migration requested."
           fi
 
       - name: Checkout exact release SHA
-        if: inputs.apply_migrations
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate.outputs.release_sha }}
 
       - name: Set up pnpm
-        if: inputs.apply_migrations
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
-        if: inputs.apply_migrations
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
@@ -124,27 +130,71 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        if: inputs.apply_migrations
         run: pnpm install --frozen-lockfile
 
-      - name: Link Production Supabase
-        if: inputs.apply_migrations
+      - name: Compare repository and Production migration history
+        id: migration-history
         shell: bash
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          APPLY_MIGRATIONS: ${{ inputs.apply_migrations }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
-          test -n "${SUPABASE_ACCESS_TOKEN}"
-          test -n "${SUPABASE_PROJECT_REF}"
-          test -n "${SUPABASE_DB_PASSWORD}"
-          pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
+          test -n "${SUPABASE_DB_URL}"
+
+          migration_output="$(pnpm exec supabase migration list --db-url "${SUPABASE_DB_URL}")"
+          printf '%s\n' "${migration_output}"
+
+          mismatches="$(printf '%s\n' "${migration_output}" | awk -F '│' '
+            NF >= 2 {
+              local_version=$1
+              remote_version=$2
+              gsub(/[^0-9]/, "", local_version)
+              gsub(/[^0-9]/, "", remote_version)
+              if ((length(local_version) == 14 || length(remote_version) == 14) && local_version != remote_version) {
+                print local_version "|" remote_version
+              }
+            }
+          ')"
+
+          local_only="$(printf '%s\n' "${mismatches}" | awk -F '|' '$1 != "" && $2 == "" { print $1 }')"
+          remote_only="$(printf '%s\n' "${mismatches}" | awk -F '|' '$1 == "" && $2 != "" { print $2 }')"
+          local_head="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sed -nE 's/^([0-9]{14})_.*/\1/p' | sort | tail -n 1)"
+          remote_head="$(printf '%s\n' "${migration_output}" | awk -F '│' '
+            NF >= 2 {
+              remote_version=$2
+              gsub(/[^0-9]/, "", remote_version)
+              if (length(remote_version) == 14) print remote_version
+            }
+          ' | sort | tail -n 1)"
+          pending_count="$(printf '%s\n' "${local_only}" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          echo "local_head=${local_head}" >> "$GITHUB_OUTPUT"
+          echo "remote_head=${remote_head}" >> "$GITHUB_OUTPUT"
+          echo "pending_count=${pending_count}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "${remote_only}" ]]; then
+            echo "Production migration history contains versions absent from the release SHA:"
+            printf '%s\n' "${remote_only}"
+            exit 1
+          fi
+
+          if [[ -n "${local_only}" && "${APPLY_MIGRATIONS}" != "true" ]]; then
+            echo "Release requested apply_migrations=false but Production is missing repository migrations:"
+            printf '%s\n' "${local_only}"
+            exit 1
+          fi
+
+          if [[ -z "${local_only}" ]]; then
+            echo "Repository and Production migration histories are synchronized at ${local_head}."
+          else
+            echo "Pending repository migrations are explicitly covered by apply_migrations=true:"
+            printf '%s\n' "${local_only}"
+          fi
 
       - name: Dry-run pending migrations
         if: inputs.apply_migrations
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
@@ -154,12 +204,65 @@ jobs:
       - name: Apply backward-compatible migrations
         if: inputs.apply_migrations && inputs.dry_run == false
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           test -n "${SUPABASE_DB_URL}"
           pnpm exec supabase db push --db-url "${SUPABASE_DB_URL}"
+
+      - name: Verify migration history after apply
+        if: inputs.apply_migrations && inputs.dry_run == false
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          migration_output="$(pnpm exec supabase migration list --db-url "${SUPABASE_DB_URL}")"
+          printf '%s\n' "${migration_output}"
+          mismatches="$(printf '%s\n' "${migration_output}" | awk -F '│' '
+            NF >= 2 {
+              local_version=$1
+              remote_version=$2
+              gsub(/[^0-9]/, "", local_version)
+              gsub(/[^0-9]/, "", remote_version)
+              if ((length(local_version) == 14 || length(remote_version) == 14) && local_version != remote_version) {
+                print local_version "|" remote_version
+              }
+            }
+          ')"
+          [[ -z "${mismatches}" ]] || {
+            echo "Migration history is still divergent after apply:"
+            printf '%s\n' "${mismatches}"
+            exit 1
+          }
+
+      - name: Record resolved migration state
+        id: final-state
+        shell: bash
+        env:
+          APPLY_MIGRATIONS: ${{ inputs.apply_migrations }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          PENDING_COUNT: ${{ steps.migration-history.outputs.pending_count }}
+          LOCAL_HEAD: ${{ steps.migration-history.outputs.local_head }}
+          PRE_REMOTE_HEAD: ${{ steps.migration-history.outputs.remote_head }}
+        run: |
+          set -euo pipefail
+          state="synced"
+          remote_head="${PRE_REMOTE_HEAD}"
+
+          if [[ "${APPLY_MIGRATIONS}" == "true" && "${PENDING_COUNT}" != "0" ]]; then
+            if [[ "${DRY_RUN}" == "true" ]]; then
+              state="pending-dry-run"
+            else
+              state="applied"
+              remote_head="${LOCAL_HEAD}"
+            fi
+          fi
+
+          echo "state=${state}" >> "$GITHUB_OUTPUT"
+          echo "local_head=${LOCAL_HEAD}" >> "$GITHUB_OUTPUT"
+          echo "remote_head=${remote_head}" >> "$GITHUB_OUTPUT"
+          echo "Resolved Production migration state: ${state}; local=${LOCAL_HEAD}; remote=${remote_head}."
 
   deploy:
     name: Deploy exact SHA to Vercel Production
@@ -258,7 +361,9 @@ jobs:
           DEPLOYMENT_URL: ${{ needs.deploy.outputs.deployment_url }}
           RELEASE_ENVIRONMENT: production
           RELEASE_SHA: ${{ needs.validate.outputs.release_sha }}
-          MIGRATION_STATE: ${{ inputs.apply_migrations && 'applied' || 'not-requested' }}
+          MIGRATION_STATE: ${{ needs.migration-plan.outputs.migration_state }}
+          MIGRATION_LOCAL_HEAD: ${{ needs.migration-plan.outputs.local_migration_head }}
+          MIGRATION_REMOTE_HEAD: ${{ needs.migration-plan.outputs.remote_migration_head }}
         run: node scripts/smoke-release.mjs
 
       - name: Upload release evidence
@@ -277,6 +382,70 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Report terminal state to release command issue
+        if: inputs.release_issue_number != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.release_issue_number }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          MIGRATION_RESULT: ${{ needs.migration-plan.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          DEPLOYMENT_URL: ${{ needs.deploy.outputs.deployment_url }}
+          RELEASE_SHA: ${{ needs.validate.outputs.release_sha }}
+          MIGRATION_STATE: ${{ needs.migration-plan.outputs.migration_state }}
+          MIGRATION_LOCAL_HEAD: ${{ needs.migration-plan.outputs.local_migration_head }}
+          MIGRATION_REMOTE_HEAD: ${{ needs.migration-plan.outputs.remote_migration_head }}
+        run: |
+          set -euo pipefail
+          [[ "${ISSUE_NUMBER}" =~ ^[0-9]+$ ]] || { echo "release_issue_number must be numeric."; exit 1; }
+
+          issue_json="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}")"
+          jq -e '.title == "[release] production" and .user.login == "fusumivietnam"' <<< "${issue_json}" >/dev/null || {
+            echo "Refusing to write terminal release state to an untrusted issue."
+            exit 1
+          }
+
+          terminal="failure"
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            if [[ "${VALIDATE_RESULT}" == "success" && "${MIGRATION_RESULT}" == "success" && "${DEPLOY_RESULT}" == "skipped" && "${SMOKE_RESULT}" == "skipped" ]]; then
+              terminal="success"
+            fi
+          elif [[ "${VALIDATE_RESULT}" == "success" && "${MIGRATION_RESULT}" == "success" && "${DEPLOY_RESULT}" == "success" && "${SMOKE_RESULT}" == "success" && "${DEPLOYMENT_URL}" =~ ^https:// ]]; then
+            terminal="success"
+          fi
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          artifact_name="release-evidence-production-${RELEASE_SHA}"
+          body_file="$(mktemp)"
+          {
+            echo "Protected Release reached terminal state: **${terminal}**."
+            echo
+            echo "- Release run: ${run_url}"
+            echo "- Exact SHA: \`${RELEASE_SHA:-unresolved}\`"
+            echo "- Dry run: \`${DRY_RUN}\`"
+            echo "- Migration job: \`${MIGRATION_RESULT}\`"
+            echo "- Migration state: \`${MIGRATION_STATE:-unresolved}\`"
+            echo "- Migration local head: \`${MIGRATION_LOCAL_HEAD:-unresolved}\`"
+            echo "- Migration remote head: \`${MIGRATION_REMOTE_HEAD:-unresolved}\`"
+            echo "- Deploy job: \`${DEPLOY_RESULT}\`"
+            echo "- Smoke job: \`${SMOKE_RESULT}\`"
+            if [[ -n "${DEPLOYMENT_URL}" ]]; then
+              echo "- Deployment: ${DEPLOYMENT_URL}"
+            fi
+            if [[ "${DRY_RUN}" != "true" && "${terminal}" == "success" ]]; then
+              echo "- Evidence artifact: \`${artifact_name}\`"
+            fi
+          } > "${body_file}"
+
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file "${body_file}"
+
+          if [[ "${terminal}" == "success" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" -f state=closed -f state_reason=completed >/dev/null
+          fi
+
       - name: Validate terminal release state
         shell: bash
         env:
