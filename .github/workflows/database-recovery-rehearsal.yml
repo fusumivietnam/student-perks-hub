@@ -9,6 +9,9 @@ on:
       - "supabase/**"
       - "package.json"
       - "pnpm-lock.yaml"
+  schedule:
+    # Weekly drift detection for the complete encrypted backup/restore path.
+    - cron: "23 3 * * 0"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +24,7 @@ concurrency:
 jobs:
   restore-rehearsal:
     name: Restore representative local backup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -29,16 +32,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.8.1
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -133,6 +136,8 @@ jobs:
             echo ""
             echo "- Source: deterministic local Supabase seed"
             echo "- Production data copied into CI: no"
+            echo "- Production secrets used: no"
+            echo "- Runner: ubuntu-24.04"
             echo "- Backup encrypted before persistence: yes"
             echo "- Restore target rebuilt from versioned migrations: yes"
             echo "- Restored data checked: categories + offers"
