@@ -1,0 +1,150 @@
+name: Managed State Recovery Watch
+
+on:
+  schedule:
+    - cron: "47 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: managed-state-recovery-watch
+  cancel-in-progress: false
+
+env:
+  INCIDENT_TITLE: "[recovery] Supabase managed state exceeds rehearsed recovery boundary"
+
+jobs:
+  recovery-readiness:
+    name: Check Auth and Storage recovery readiness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      MANAGED_STATE_RECOVERY_READY: ${{ vars.MANAGED_STATE_RECOVERY_READY || 'false' }}
+
+    steps:
+      - name: Query aggregate managed-state counts
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}"
+          command -v psql >/dev/null 2>&1 || {
+            echo "psql is unavailable on the pinned runner image."
+            exit 1
+          }
+
+          counts="$(
+            psql "${SUPABASE_DB_URL}" \
+              --no-psqlrc \
+              --set ON_ERROR_STOP=1 \
+              --tuples-only \
+              --no-align \
+              --field-separator='|' \
+              --command "select (select count(*) from auth.users), (select count(*) from storage.objects);"
+          )"
+
+          IFS='|' read -r auth_users storage_objects <<< "${counts}"
+          [[ "${auth_users}" =~ ^[0-9]+$ ]]
+          [[ "${storage_objects}" =~ ^[0-9]+$ ]]
+
+          ready=false
+          reason="managed-state recovery is not yet explicitly rehearsed"
+          if [[ "${MANAGED_STATE_RECOVERY_READY}" == "true" ]]; then
+            ready=true
+            reason="managed-state recovery explicitly marked ready"
+          elif [[ "${auth_users}" == "0" && "${storage_objects}" == "0" ]]; then
+            ready=true
+            reason="no Production Auth users or Storage objects exist yet"
+          fi
+
+          {
+            echo "ready=${ready}"
+            echo "reason=${reason}"
+            echo "auth_users=${auth_users}"
+            echo "storage_objects=${storage_objects}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Open or update recovery readiness issue
+        if: steps.state.outputs.ready != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTH_USERS: ${{ steps.state.outputs.auth_users }}
+          STORAGE_OBJECTS: ${{ steps.state.outputs.storage_objects }}
+          REASON: ${{ steps.state.outputs.reason }}
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          body="Supabase managed state is now non-zero while the reviewed recovery boundary is not explicitly marked ready.
+
+          - Auth user count: \`${AUTH_USERS}\`
+          - Storage object count: \`${STORAGE_OBJECTS}\`
+          - Reason: ${REASON}
+          - Verification: ${run_url}
+
+          This issue intentionally records aggregate counts only. Do not paste Auth rows, emails, Storage paths, tokens, database URLs, or backup secrets here.
+
+          Resolve by completing one reviewed path from \`docs/DATABASE_RECOVERY.md\` and then setting repository variable \`MANAGED_STATE_RECOVERY_READY=true\`."
+
+          if [[ -n "${issue_number}" ]]; then
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "${body}"
+          else
+            gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${INCIDENT_TITLE}" \
+              --body "${body}" \
+              --label "type:chore" \
+              --label "area:database" \
+              --label "needs:human"
+          fi
+
+      - name: Close resolved recovery readiness issue
+        if: steps.state.outputs.ready == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTH_USERS: ${{ steps.state.outputs.auth_users }}
+          STORAGE_OBJECTS: ${{ steps.state.outputs.storage_objects }}
+          REASON: ${{ steps.state.outputs.reason }}
+        run: |
+          set -euo pipefail
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          if [[ -n "${issue_number}" ]]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "Managed-state recovery watch is healthy again. Auth users: \`${AUTH_USERS}\`; Storage objects: \`${STORAGE_OBJECTS}\`; reason: ${REASON}. Verification: ${run_url}"
+            gh issue close --repo "${GITHUB_REPOSITORY}" "${issue_number}" --reason completed
+          fi
+
+      - name: Publish recovery readiness summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Managed-state recovery watch"
+            echo ""
+            echo "- Ready: \`${{ steps.state.outputs.ready }}\`"
+            echo "- Reason: ${{ steps.state.outputs.reason }}"
+            echo "- Auth users: \`${{ steps.state.outputs.auth_users }}\`"
+            echo "- Storage objects: \`${{ steps.state.outputs.storage_objects }}\`"
+            echo "- Readiness override: \`${MANAGED_STATE_RECOVERY_READY}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Fail when managed state is outside rehearsed recovery boundary
+        if: steps.state.outputs.ready != 'true'
+        run: exit 1
