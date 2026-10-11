@@ -53,7 +53,8 @@ export async function getOfferDiscovery(params: OfferDiscoveryParams) {
   let query = supabase
     .from("offers")
     .select(offerCardSelect, { count: "exact" })
-    .eq("status", "published");
+    .eq("status", "published")
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
   const search = params.q ? safeSearchTerm(params.q) : "";
   if (search) {

@@ -32,12 +32,24 @@ const offerSchema = z.object({
   title: z.string().trim().min(4).max(180),
   provider: z.string().trim().min(2).max(120),
   summary: z.string().trim().min(10).max(500),
-  officialUrl: z.string().trim().url().max(1000),
+  officialUrl: z
+    .string()
+    .trim()
+    .url()
+    .max(1000)
+    .refine((value) => value.startsWith("https://"), "Official URL must use HTTPS"),
   categoryId: z.string().uuid().optional(),
   benefitType: z.enum(["free", "discount", "credit", "trial", "other"]),
   benefitText: z.string().trim().max(160).optional(),
   status: z.enum(["draft", "published", "expired", "archived"]),
   featured: z.boolean(),
+});
+
+const offerVerificationSchema = z.object({
+  offerId: z.string().uuid(),
+  verificationNote: z.string().trim().max(1000).optional(),
+  expiresOn: z.string().date().optional(),
+  verificationIntervalDays: z.coerce.number().int().min(1).max(365),
 });
 
 const idSchema = z.string().uuid();
@@ -188,9 +200,42 @@ export async function saveOffer(formData: FormData) {
   if (error) throw new Error("Could not save offer");
 
   revalidatePath("/admin");
+  revalidatePath("/admin/freshness");
   revalidatePath("/offers");
   revalidatePath("/");
   revalidatePath("/offers/" + parsed.data.slug);
+}
+
+export async function verifyOfferFreshness(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = offerVerificationSchema.safeParse({
+    offerId: formData.get("offerId"),
+    verificationNote: optionalText(formData.get("verificationNote")),
+    expiresOn: optionalText(formData.get("expiresOn")),
+    verificationIntervalDays: formData.get("verificationIntervalDays") || "90",
+  });
+  if (!parsed.success) throw new Error("Invalid offer verification request");
+
+  const expiresAt = parsed.data.expiresOn
+    ? new Date(`${parsed.data.expiresOn}T23:59:59.999Z`).toISOString()
+    : undefined;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("verify_offer", {
+    p_offer_id: parsed.data.offerId,
+    p_verification_note: parsed.data.verificationNote,
+    p_expires_at: expiresAt,
+    p_verification_interval_days: parsed.data.verificationIntervalDays,
+  });
+
+  if (error) throw new Error("Could not verify offer freshness");
+  if (!data) throw new Error("Offer is not eligible for reverification");
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/freshness");
+  revalidatePath("/offers");
+  revalidatePath("/");
 }
 
 export async function deleteOffer(formData: FormData) {
@@ -202,6 +247,7 @@ export async function deleteOffer(formData: FormData) {
   if (error) throw new Error("Could not delete offer");
 
   revalidatePath("/admin");
+  revalidatePath("/admin/freshness");
   revalidatePath("/offers");
   revalidatePath("/");
 }

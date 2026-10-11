@@ -117,6 +117,7 @@ export type Database = {
           created_at: string
           description: string | null
           eligibility: string | null
+          expires_at: string | null
           how_to_claim: string | null
           id: string
           is_featured: boolean
@@ -132,6 +133,9 @@ export type Database = {
           tags: string[]
           title: string
           updated_at: string
+          verification_interval_days: number
+          verification_note: string | null
+          verified_by: string | null
           view_count: number
         }
         Insert: {
@@ -142,6 +146,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           eligibility?: string | null
+          expires_at?: string | null
           how_to_claim?: string | null
           id?: string
           is_featured?: boolean
@@ -157,6 +162,9 @@ export type Database = {
           tags?: string[]
           title: string
           updated_at?: string
+          verification_interval_days?: number
+          verification_note?: string | null
+          verified_by?: string | null
           view_count?: number
         }
         Update: {
@@ -167,6 +175,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           eligibility?: string | null
+          expires_at?: string | null
           how_to_claim?: string | null
           id?: string
           is_featured?: boolean
@@ -182,6 +191,9 @@ export type Database = {
           tags?: string[]
           title?: string
           updated_at?: string
+          verification_interval_days?: number
+          verification_note?: string | null
+          verified_by?: string | null
           view_count?: number
         }
         Relationships: [
@@ -337,6 +349,15 @@ export type Database = {
           p_review_note?: string
           p_status: string
           p_submission_id: string
+        }
+        Returns: boolean
+      }
+      verify_offer: {
+        Args: {
+          p_expires_at?: string
+          p_offer_id: string
+          p_verification_interval_days?: number
+          p_verification_note?: string
         }
         Returns: boolean
       }

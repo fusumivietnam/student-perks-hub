@@ -16,12 +16,17 @@ const offerCardSelect = `
   )
 `;
 
+function activeExpiryFilter() {
+  return `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
+}
+
 export async function getPublishedBrands() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("offers")
     .select("provider")
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .order("provider");
 
   if (error) {
@@ -49,6 +54,7 @@ export async function getBrandBySlug(slug: string) {
     .from("offers")
     .select(offerCardSelect)
     .eq("status", "published")
+    .or(activeExpiryFilter())
     .eq("provider", brand.name)
     .order("published_at", { ascending: false })
     .order("title");
