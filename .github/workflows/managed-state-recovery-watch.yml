@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   issues: write
 
@@ -16,10 +17,12 @@ concurrency:
 
 env:
   INCIDENT_TITLE: "[recovery] Supabase managed state exceeds rehearsed recovery boundary"
+  BACKUP_INCIDENT_TITLE: "[recovery] Production database backup evidence is stale"
+  BACKUP_FRESHNESS_HOURS: "36"
 
 jobs:
   recovery-readiness:
-    name: Check Auth and Storage recovery readiness
+    name: Check Production recovery readiness
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     environment: production
@@ -68,6 +71,82 @@ jobs:
             echo "reason=${reason}"
             echo "auth_users=${auth_users}"
             echo "storage_objects=${storage_objects}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Verify encrypted database backup freshness
+        id: backup
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/database-backup.yml/runs?per_page=20")"
+          run_id="$(
+            jq -r '.workflow_runs[] | select(.status == "completed" and .conclusion == "success") | .id' <<< "${runs}" |
+              head -n 1
+          )"
+
+          healthy=false
+          reason="no successful Production Database Backup run was found"
+          artifact_id=""
+          artifact_created_at=""
+          artifact_expires_at=""
+          age_hours=""
+          digest_present=false
+
+          if [[ -n "${run_id}" ]]; then
+            expected_name="production-database-backup-${run_id}"
+            artifacts="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100")"
+            artifact="$(
+              jq -c --arg name "${expected_name}" '.artifacts[] | select(.name == $name) | .' <<< "${artifacts}" |
+                head -n 1
+            )"
+
+            if [[ -z "${artifact}" ]]; then
+              reason="latest successful backup run has no expected encrypted artifact"
+            else
+              artifact_id="$(jq -r '.id' <<< "${artifact}")"
+              artifact_created_at="$(jq -r '.created_at' <<< "${artifact}")"
+              artifact_expires_at="$(jq -r '.expires_at' <<< "${artifact}")"
+              expired="$(jq -r '.expired' <<< "${artifact}")"
+              digest="$(jq -r '.digest // ""' <<< "${artifact}")"
+              if [[ "${digest}" == sha256:* ]]; then
+                digest_present=true
+              fi
+
+              created_epoch="$(date -u -d "${artifact_created_at}" +%s)"
+              now_epoch="$(date -u +%s)"
+              age_seconds="$((now_epoch - created_epoch))"
+              (( age_seconds >= 0 )) || {
+                echo "Backup artifact creation time is unexpectedly in the future."
+                exit 1
+              }
+              age_hours="$((age_seconds / 3600))"
+              max_age_seconds="$((BACKUP_FRESHNESS_HOURS * 3600))"
+
+              if [[ "${expired}" == "true" ]]; then
+                reason="latest backup artifact is expired"
+              elif [[ "${digest_present}" != "true" ]]; then
+                reason="latest backup artifact is missing a SHA-256 digest"
+              elif (( age_seconds > max_age_seconds )); then
+                reason="latest backup artifact is older than ${BACKUP_FRESHNESS_HOURS} hours"
+              else
+                healthy=true
+                reason="latest encrypted backup artifact is fresh and integrity-addressed"
+              fi
+            fi
+          fi
+
+          {
+            echo "healthy=${healthy}"
+            echo "reason=${reason}"
+            echo "run_id=${run_id}"
+            echo "artifact_id=${artifact_id}"
+            echo "artifact_created_at=${artifact_created_at}"
+            echo "artifact_expires_at=${artifact_expires_at}"
+            echo "age_hours=${age_hours}"
+            echo "digest_present=${digest_present}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Open or update recovery readiness issue
@@ -132,20 +211,96 @@ jobs:
             gh issue close --repo "${GITHUB_REPOSITORY}" "${issue_number}" --reason completed
           fi
 
+      - name: Open or update stale backup issue
+        if: steps.backup.outputs.healthy != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_REASON: ${{ steps.backup.outputs.reason }}
+          BACKUP_RUN_ID: ${{ steps.backup.outputs.run_id }}
+          BACKUP_ARTIFACT_ID: ${{ steps.backup.outputs.artifact_id }}
+          BACKUP_AGE_HOURS: ${{ steps.backup.outputs.age_hours }}
+          BACKUP_EXPIRES_AT: ${{ steps.backup.outputs.artifact_expires_at }}
+          BACKUP_DIGEST_PRESENT: ${{ steps.backup.outputs.digest_present }}
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${BACKUP_INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          body="Production database backup evidence is outside the recovery freshness contract.
+
+          - Reason: ${BACKUP_REASON}
+          - Latest successful backup run: \`${BACKUP_RUN_ID:-unresolved}\`
+          - Artifact ID: \`${BACKUP_ARTIFACT_ID:-unresolved}\`
+          - Artifact age (hours): \`${BACKUP_AGE_HOURS:-unresolved}\`
+          - Artifact expiry: \`${BACKUP_EXPIRES_AT:-unresolved}\`
+          - SHA-256 digest present: \`${BACKUP_DIGEST_PRESENT}\`
+          - Verification: ${run_url}
+
+          The application database RPO target remains <=24h; this guard uses a ${BACKUP_FRESHNESS_HOURS}h threshold only to tolerate normal GitHub schedule delays. Do not paste backup contents, database URLs, encryption passphrases, or raw SQL here."
+
+          if [[ -n "${issue_number}" ]]; then
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "${body}"
+          else
+            gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${BACKUP_INCIDENT_TITLE}" \
+              --body "${body}" \
+              --label "type:chore" \
+              --label "area:database" \
+              --label "needs:human"
+          fi
+
+      - name: Close resolved stale backup issue
+        if: steps.backup.outputs.healthy == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN_ID: ${{ steps.backup.outputs.run_id }}
+          BACKUP_ARTIFACT_ID: ${{ steps.backup.outputs.artifact_id }}
+          BACKUP_AGE_HOURS: ${{ steps.backup.outputs.age_hours }}
+        run: |
+          set -euo pipefail
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${BACKUP_INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          if [[ -n "${issue_number}" ]]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "Backup freshness is healthy again. Run: \`${BACKUP_RUN_ID}\`; artifact: \`${BACKUP_ARTIFACT_ID}\`; age: \`${BACKUP_AGE_HOURS}h\`. Verification: ${run_url}"
+            gh issue close --repo "${GITHUB_REPOSITORY}" "${issue_number}" --reason completed
+          fi
+
       - name: Publish recovery readiness summary
         if: always()
         shell: bash
         run: |
           {
-            echo "## Managed-state recovery watch"
+            echo "## Production recovery watch"
             echo ""
+            echo "### Managed state"
             echo "- Ready: \`${{ steps.state.outputs.ready }}\`"
             echo "- Reason: ${{ steps.state.outputs.reason }}"
             echo "- Auth users: \`${{ steps.state.outputs.auth_users }}\`"
             echo "- Storage objects: \`${{ steps.state.outputs.storage_objects }}\`"
             echo "- Readiness override: \`${MANAGED_STATE_RECOVERY_READY}\`"
+            echo ""
+            echo "### Encrypted database backup"
+            echo "- Healthy: \`${{ steps.backup.outputs.healthy }}\`"
+            echo "- Reason: ${{ steps.backup.outputs.reason }}"
+            echo "- Backup run: \`${{ steps.backup.outputs.run_id }}\`"
+            echo "- Artifact ID: \`${{ steps.backup.outputs.artifact_id }}\`"
+            echo "- Age: \`${{ steps.backup.outputs.age_hours }}h\`"
+            echo "- Expires: \`${{ steps.backup.outputs.artifact_expires_at }}\`"
+            echo "- SHA-256 digest present: \`${{ steps.backup.outputs.digest_present }}\`"
           } >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Fail when managed state is outside rehearsed recovery boundary
-        if: steps.state.outputs.ready != 'true'
+      - name: Fail when Production recovery evidence is outside contract
+        if: steps.state.outputs.ready != 'true' || steps.backup.outputs.healthy != 'true'
         run: exit 1
