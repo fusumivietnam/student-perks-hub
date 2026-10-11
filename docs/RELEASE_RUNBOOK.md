@@ -12,6 +12,8 @@ release/tag → commit SHA → CI/workflow result → database migration state �
 
 Record the exact commit SHA before promotion. Production must not be deployed from an unrelated branch or an unreviewed rebuild.
 
+For the current Vercel deployment, the canonical Production endpoint is `https://student-perks-hub-fusumivietnam.vercel.app`. The protected release smoke gate must prove that this alias and the immutable deployment URL report the same exact Git SHA and Vercel deployment ID through `/api/health` before a release is considered successful.
+
 ## Release gate
 
 Before production deployment:
@@ -74,11 +76,12 @@ Before the first production release:
 4. Confirm database backup/recovery readiness.
 5. Apply reviewed database migrations using the production deployment mechanism.
 6. Deploy the application from the same reviewed commit.
-7. Verify `/api/health`.
-8. Exercise the critical smoke checks.
-9. Confirm monitoring receives the production release identity.
-10. Record release tag, commit SHA, deployment evidence, and migration state.
-11. Close the release only after smoke checks and alerting are healthy.
+7. Verify the immutable deployment `/api/health` reports the exact release SHA and a valid `dpl_` deployment ID.
+8. Verify canonical Production `/api/health` reports the same release SHA and deployment ID.
+9. Exercise the critical smoke checks through the canonical Production endpoint.
+10. Confirm monitoring receives the production release identity.
+11. Retain the single `release-evidence.json` artifact containing deployment, canonical alias, migration, workflow, health, and smoke evidence.
+12. Close the release only after smoke checks and alerting are healthy.
 
 ## Smoke checks
 
@@ -91,7 +94,8 @@ At minimum verify:
 - protected pages reject unauthenticated access;
 - database-backed reads work;
 - admin authorization denies non-admin access;
-- `/api/health` returns HTTP 200;
+- immutable and canonical `/api/health` both return HTTP 200;
+- immutable and canonical health payloads identify the same exact release SHA and deployment ID;
 - monitoring identifies the deployed environment and release.
 
 ## Rollback
