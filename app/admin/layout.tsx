@@ -6,6 +6,7 @@ import { getCurrentAuth } from "@/lib/auth";
 
 const adminNav = [
   { href: "/admin", label: "Content" },
+  { href: "/admin/freshness", label: "Offer freshness" },
   { href: "/admin/submissions", label: "Submissions" },
   { href: "/admin/verifications", label: "Xác minh sinh viên" },
 ];
