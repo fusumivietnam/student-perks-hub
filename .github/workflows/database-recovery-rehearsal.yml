@@ -29,8 +29,14 @@ jobs:
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
       BACKUP_ENCRYPTION_PASSPHRASE: "local-rehearsal-only-not-a-production-secret"
+      RECOVERY_EVIDENCE_RETENTION_DAYS: "90"
 
     steps:
+      - name: Record rehearsal start
+        id: timing
+        shell: bash
+        run: echo "started_epoch=$(date -u +%s)" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -127,6 +133,68 @@ jobs:
           test "$(psql "${DB_URL}" -Atc 'select count(*) from public.offers')" = "${EXPECTED_OFFERS}"
           pnpm db:test
 
+      - name: Create structured rehearsal evidence
+        id: evidence
+        shell: bash
+        env:
+          STARTED_EPOCH: ${{ steps.timing.outputs.started_epoch }}
+          EXPECTED_CATEGORIES: ${{ steps.before.outputs.categories }}
+          EXPECTED_OFFERS: ${{ steps.before.outputs.offers }}
+        run: |
+          set -euo pipefail
+          finished_epoch="$(date -u +%s)"
+          [[ "${STARTED_EPOCH}" =~ ^[0-9]+$ ]]
+          duration_seconds="$((finished_epoch - STARTED_EPOCH))"
+          (( duration_seconds >= 0 ))
+          mkdir -p recovery-evidence
+          jq -n \
+            --arg repository "${GITHUB_REPOSITORY}" \
+            --arg run_id "${GITHUB_RUN_ID}" \
+            --arg run_attempt "${GITHUB_RUN_ATTEMPT}" \
+            --arg commit_sha "${GITHUB_SHA}" \
+            --arg event_name "${GITHUB_EVENT_NAME}" \
+            --arg verified_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --argjson duration_seconds "${duration_seconds}" \
+            --argjson categories "${EXPECTED_CATEGORIES}" \
+            --argjson offers "${EXPECTED_OFFERS}" \
+            '{
+              schemaVersion: 1,
+              kind: "database-recovery-rehearsal",
+              repository: $repository,
+              workflow: {
+                runId: $run_id,
+                runAttempt: $run_attempt,
+                event: $event_name
+              },
+              commitSha: $commit_sha,
+              source: "deterministic-local-supabase-seed",
+              productionDataCopied: false,
+              productionSecretsUsed: false,
+              encryptedBeforePersistence: true,
+              targetRebuiltFromVersionedMigrations: true,
+              durationSeconds: $duration_seconds,
+              aggregateCounts: {
+                categories: $categories,
+                offers: $offers
+              },
+              checks: [
+                {name: "encrypted-backup-integrity", ok: true},
+                {name: "clean-target-rebuild", ok: true},
+                {name: "representative-data-restore", ok: true},
+                {name: "database-authorization-tests", ok: true}
+              ],
+              verifiedAt: $verified_at
+            }' > recovery-evidence/recovery-evidence.json
+          echo "duration_seconds=${duration_seconds}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload recovery rehearsal evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: database-recovery-evidence-${{ github.run_id }}
+          path: recovery-evidence/recovery-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Publish rehearsal evidence
         if: always()
         shell: bash
@@ -142,11 +210,14 @@ jobs:
             echo "- Restore target rebuilt from versioned migrations: yes"
             echo "- Restored data checked: categories + offers"
             echo "- RLS/auth database tests: executed"
+            echo "- Measured duration: \`${{ steps.evidence.outputs.duration_seconds || 'unavailable' }}s\`"
+            echo "- Structured evidence retention: \`${RECOVERY_EVIDENCE_RETENTION_DAYS} days\`"
+            echo "- Structured evidence contains Production data/PII: no"
           } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Remove decrypted material
         if: always()
-        run: rm -rf rehearsal-backup restore-input
+        run: rm -rf rehearsal-backup restore-input recovery-evidence
 
       - name: Stop local database
         if: always()
