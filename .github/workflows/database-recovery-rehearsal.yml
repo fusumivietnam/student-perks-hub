@@ -30,6 +30,7 @@ jobs:
       SUPABASE_TELEMETRY_DISABLED: "1"
       BACKUP_ENCRYPTION_PASSPHRASE: "local-rehearsal-only-not-a-production-secret"
       RECOVERY_EVIDENCE_RETENTION_DAYS: "90"
+      EVIDENCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Record rehearsal start
@@ -144,6 +145,7 @@ jobs:
           set -euo pipefail
           finished_epoch="$(date -u +%s)"
           [[ "${STARTED_EPOCH}" =~ ^[0-9]+$ ]]
+          [[ "${EVIDENCE_COMMIT_SHA}" =~ ^[0-9a-f]{40}$ ]]
           duration_seconds="$((finished_epoch - STARTED_EPOCH))"
           (( duration_seconds >= 0 ))
           mkdir -p recovery-evidence
@@ -151,7 +153,7 @@ jobs:
             --arg repository "${GITHUB_REPOSITORY}" \
             --arg run_id "${GITHUB_RUN_ID}" \
             --arg run_attempt "${GITHUB_RUN_ATTEMPT}" \
-            --arg commit_sha "${GITHUB_SHA}" \
+            --arg commit_sha "${EVIDENCE_COMMIT_SHA}" \
             --arg event_name "${GITHUB_EVENT_NAME}" \
             --arg verified_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --argjson duration_seconds "${duration_seconds}" \
@@ -210,6 +212,7 @@ jobs:
             echo "- Restore target rebuilt from versioned migrations: yes"
             echo "- Restored data checked: categories + offers"
             echo "- RLS/auth database tests: executed"
+            echo "- Evidence commit: \`${EVIDENCE_COMMIT_SHA}\`"
             echo "- Measured duration: \`${{ steps.evidence.outputs.duration_seconds || 'unavailable' }}s\`"
             echo "- Structured evidence retention: \`${RECOVERY_EVIDENCE_RETENTION_DAYS} days\`"
             echo "- Structured evidence contains Production data/PII: no"
