@@ -8,6 +8,11 @@ updates:
       time: "09:00"
       timezone: "Asia/Bangkok"
     open-pull-requests-limit: 10
+    ignore:
+      # Keep Node type definitions aligned with the Node 24 runtime baseline.
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
     groups:
       next-react:
         patterns:
@@ -34,3 +39,10 @@ updates:
       day: "monday"
       time: "09:30"
       timezone: "Asia/Bangkok"
+    groups:
+      core-actions:
+        patterns:
+          - "actions/*"
+      codeql-actions:
+        patterns:
+          - "github/codeql-action/*"
