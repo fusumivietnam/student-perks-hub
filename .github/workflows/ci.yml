@@ -19,8 +19,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
+      verify: ${{ steps.filter.outputs.verify }}
       database: ${{ steps.filter.outputs.database }}
       e2e: ${{ steps.filter.outputs.e2e }}
+      lighthouse: ${{ steps.filter.outputs.lighthouse }}
 
     steps:
       - name: Checkout
@@ -39,33 +41,55 @@ jobs:
           set -euo pipefail
 
           if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "verify=true" >> "$GITHUB_OUTPUT"
             echo "database=true" >> "$GITHUB_OUTPUT"
             echo "e2e=true" >> "$GITHUB_OUTPUT"
+            echo "lighthouse=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
             changed_files="$(git show --pretty='' --name-only "${HEAD_SHA}")"
+            diff_range="${HEAD_SHA}^ ${HEAD_SHA}"
           else
             changed_files="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+            diff_range="${BASE_SHA} ${HEAD_SHA}"
           fi
 
           printf '%s\n' "${changed_files}"
 
-          if grep -Eq '^(supabase/|scripts/ci-supabase-start\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
-            echo "database=true" >> "$GITHUB_OUTPUT"
+          if grep -Eq '^(app/|components/|lib/|e2e/|scripts/|supabase/|eslint\.config\.mjs$|instrumentation\.ts$|proxy\.ts$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|postcss\.config\.mjs$|tsconfig\.json$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            echo "verify=true" >> "$GITHUB_OUTPUT"
           else
-            echo "database=false" >> "$GITHUB_OUTPUT"
+            echo "verify=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/(ci-supabase-start|e2e-(setup|start))\.mjs$|(playwright\.config\.mjs|lighthouserc\.cjs)$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+          database=false
+          if grep -Eq '^(supabase/|scripts/ci-supabase-start\.mjs$|pnpm-workspace\.yaml$|\.nvmrc$|lib/database\.types\.ts$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            database=true
+          elif grep -Eq '^(package\.json|pnpm-lock\.yaml)$' <<< "${changed_files}"; then
+            if git diff --unified=0 ${diff_range} -- package.json pnpm-lock.yaml | grep -Eq '^[+-][^+-].*(@supabase/|"supabase"|/supabase@)'; then
+              database=true
+            fi
+          fi
+          echo "database=${database}" >> "$GITHUB_OUTPUT"
+
+          if grep -Eq '^(app/|components/|lib/|supabase/|e2e/|scripts/(ci-supabase-start|e2e-(setup|start))\.mjs$|playwright\.config\.mjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "e2e=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if grep -Eq '^(app/|components/|lib/|lighthouserc\.cjs$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|next\.config\.(js|mjs|ts)$|postcss\.config\.mjs$|\.github/workflows/ci\.yml$)' <<< "${changed_files}"; then
+            echo "lighthouse=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "lighthouse=false" >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
     name: verify
+    needs: changes
+    if: needs.changes.outputs.verify == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -248,7 +272,7 @@ jobs:
   lighthouse:
     name: Lighthouse budget
     needs: changes
-    if: needs.changes.outputs.e2e == 'true'
+    if: needs.changes.outputs.lighthouse == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 22
     env:
@@ -346,7 +370,7 @@ jobs:
           set -euo pipefail
 
           [[ "${CHANGES_RESULT}" == "success" ]]
-          [[ "${VERIFY_RESULT}" == "success" ]]
+          [[ "${VERIFY_RESULT}" == "success" || "${VERIFY_RESULT}" == "skipped" ]]
           [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
           [[ "${E2E_RESULT}" == "success" || "${E2E_RESULT}" == "skipped" ]]
           [[ "${LIGHTHOUSE_RESULT}" == "success" || "${LIGHTHOUSE_RESULT}" == "skipped" ]]
