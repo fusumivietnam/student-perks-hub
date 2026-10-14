@@ -1,8 +1,8 @@
 # Implementation Roadmap
 
-Last updated: 2026-10-14
+Last updated: 2026-10-15
 
-Student Perks Hub is post-launch. The MVP, protected Production topology, first release lifecycle, monitoring, rollback, and encrypted database-backup baseline are complete. New work should be delivered in small vertical slices through PR review and required CI/CodeQL gates.
+Student Perks Hub is post-launch. The MVP, protected Production topology, first release lifecycle, monitoring, rollback, and encrypted database-backup baseline are complete. Routine work now uses **Fast Delivery Mode**: deliver cohesive vertical slices in batched PRs, prefer one atomic commit when practical, keep required CI/CodeQL/domain gates, auto-merge after green checks, and release through a protected release train only when Production runtime changes justify it.
 
 ## Current snapshot
 
@@ -22,6 +22,7 @@ Student Perks Hub is post-launch. The MVP, protected Production topology, first 
 - [x] cost-optimized Preview model with no Production privileged Supabase credentials
 - [x] exact-SHA protected Production release control plane
 - [x] canonical Production release/deployment identity verification
+- [x] Fast Delivery Mode governance for batched vertical-slice PRs and release trains
 
 ### Product baseline — complete
 
@@ -45,21 +46,22 @@ Student Perks Hub is post-launch. The MVP, protected Production topology, first 
 - [x] daily managed-state/backup-freshness recovery watch
 - [x] managed-state readiness manual override removed; non-zero Auth/Storage fails closed until repository-verifiable recovery rehearsal exists
 - [x] weekly local encrypted backup/restore rehearsal
+- [x] managed Auth/Storage synthetic recovery rehearsal with 90-day structured evidence
 - [x] fail-closed migration and canonical release identity gates
 
 ## Current post-launch work
 
-### #145 — Recovery evidence and retention hardening
+### #155 — Repository-verifiable Auth/Storage recovery
 
-Status: **In progress**
+Status: **Active boundary follow-up**
 
-- [x] preserve the existing daily encrypted Production backup lane and 30-day rolling backup retention
-- [x] preserve the existing weekly recovery-rehearsal lane; do not create a duplicate workflow
-- [x] add structured recovery rehearsal evidence without Production data, PII, or Production secrets
-- [x] record measured rehearsal duration and safe aggregate validation counts
-- [x] retain the small recovery evidence artifact for 90 days
-- [ ] PR validation: recovery rehearsal, CI and CodeQL
-- [ ] merge after gates pass
+- [x] remove manual managed-state readiness override
+- [x] add synthetic local Auth loss/reprovision rehearsal
+- [x] add Storage object-byte loss/restore rehearsal with SHA-256 verification
+- [x] emit structured non-sensitive evidence retained for 90 days
+- [x] run rehearsal on protected-main changes and weekly schedule
+- [x] document provider/project rebuild checklist
+- [ ] prove the selected remote recovery path before Production managed state becomes material
 
 ### #136 — Real password-recovery email acceptance
 
@@ -75,6 +77,28 @@ The Production implementation, canonical callback configuration, protected relea
 
 Keep #136 open until that real-email exercise is performed.
 
+## Fast Delivery Mode
+
+Routine implementation should follow `docs/DELIVERY_MODE.md`.
+
+Default shape:
+
+```text
+objective / issue
+  -> one implementation branch
+  -> one cohesive batch
+  -> one atomic commit when practical
+  -> one PR
+  -> CI + CodeQL + relevant domain gates
+  -> auto-merge
+  -> protected main
+  -> release train when needed
+```
+
+Documentation, tests, workflow changes and cleanup that directly belong to the same objective should remain in the same PR. Split only for real security, destructive-migration, ownership, rollback or review boundaries.
+
+Dependency updates are grouped weekly into a small set of coherent fault domains rather than one PR per patch package.
+
 ## Recovery maturity boundary
 
 Production currently has no material managed Auth/Storage state. The Free-plan baseline therefore remains intentionally cost-conscious:
@@ -83,7 +107,8 @@ Production currently has no material managed Auth/Storage state. The Free-plan b
 - application data is protected by unconditional daily encrypted logical backups;
 - backup freshness is monitored automatically;
 - local restore mechanics and authorization invariants are rehearsed weekly;
-- managed-state recovery remains fail-closed while Auth + Storage recovery is not genuinely implemented and rehearsed;
+- synthetic Auth/Storage loss-and-recovery mechanics are rehearsed weekly with structured evidence;
+- managed-state recovery remains fail-closed while a real remote recovery path is not genuinely proven;
 - there is no repository variable that can manually bypass the managed-state recovery boundary.
 
 Before meaningful Auth users or Storage objects accumulate, choose one reviewed path:
@@ -97,31 +122,32 @@ Do not enable paid recovery infrastructure merely to satisfy a checklist while m
 
 ## Operational priorities
 
-1. **Managed-state recovery implementation** — before meaningful Auth/Storage growth, implement one reviewed recovery path and repository-verifiable rehearsal evidence.
-2. **Dependency/runtime/cache maintenance** — keep pinned Actions, Node, pnpm, Supabase CLI and Vercel CLI reviewed and current without overlapping CI lanes.
-3. **Observability review** — periodically validate incident auto-open/auto-close and release correlation; avoid collecting sensitive request/session data.
-4. **Recovery drills** — continue scheduled backup freshness and weekly restore rehearsal; escalate immediately when managed Auth/Storage state becomes non-zero.
-5. **Release evidence hygiene** — keep exact SHA, deployment ID, migration identity and canonical endpoint correlated for every protected Production release.
-6. **Product iteration** — new feature slices continue through Issue → PR → CI/CodeQL → merge → protected release only when Production runtime changes.
+1. **Fast delivery throughput** — batch related implementation/tests/docs/workflow changes into cohesive PRs and avoid tool-generated micro-commits.
+2. **Managed-state recovery implementation** — before meaningful Auth/Storage growth, prove one reviewed remote recovery path and repository-verifiable evidence.
+3. **Dependency/runtime/cache maintenance** — use grouped weekly dependency PRs and keep pinned Actions, Node, pnpm, Supabase CLI and Vercel CLI current without overlapping CI lanes.
+4. **CI efficiency** — continue path-based gates and reduce duplicate build work only where it does not increase flakiness or weaken release assurance.
+5. **Observability and recovery drills** — validate incident auto-open/auto-close, backup freshness, release correlation and scheduled restore rehearsals.
+6. **Product iteration** — deliver the next product work as larger vertical slices, then release through protected release trains rather than per-merge deployments.
 
 ## End-to-end lifecycle
 
 ```text
 Idea / requirement
-  → Issue / Project triage
-  → technical decision
-  → implementation branch
-  → Pull Request
-  → CI Gate + CodeQL + database/browser gates
-  → optional Vercel Preview UI/build review
-  → protected main
-  → exact release candidate SHA
-  → Production migration fail-closed gate
-  → protected immutable Vercel Production deployment
-  → canonical alias + smoke + release evidence
-  → monitoring / backup / recovery watch
-  → incident response / rollback / restore rehearsal
-  → retrospective / follow-up issue
+  -> Issue / Project triage
+  -> delivery batch / technical decision
+  -> implementation branch
+  -> cohesive vertical slice
+  -> Pull Request
+  -> CI Gate + CodeQL + relevant database/browser/recovery gates
+  -> optional Vercel Preview UI/build review
+  -> auto-merge to protected main
+  -> release train / exact release candidate SHA
+  -> Production migration fail-closed gate
+  -> protected immutable Vercel Production deployment
+  -> canonical alias + smoke + release evidence
+  -> monitoring / backup / recovery watch
+  -> incident response / rollback / restore rehearsal
+  -> retrospective / follow-up only when it crosses a real boundary
 ```
 
 ## Architecture guardrails

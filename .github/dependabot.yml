@@ -7,14 +7,14 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Bangkok"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     ignore:
       # Keep Node type definitions aligned with the Node 24 runtime baseline.
       - dependency-name: "@types/node"
         update-types:
           - "version-update:semver-major"
     groups:
-      next-react:
+      runtime:
         patterns:
           - "next"
           - "eslint-config-next"
@@ -26,11 +26,41 @@ updates:
         patterns:
           - "@supabase/*"
           - "supabase"
-      tailwind:
+      ui-styling:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
           - "tailwind-merge"
+          - "lucide-react"
+      tooling:
+        patterns:
+          - "typescript"
+          - "eslint"
+          - "eslint-*"
+          - "@types/*"
+        exclude-patterns:
+          - "@types/react"
+          - "@types/react-dom"
+      remaining-low-risk:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "next"
+          - "eslint-config-next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@supabase/*"
+          - "supabase"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tailwind-merge"
+          - "lucide-react"
+          - "typescript"
+          - "eslint"
+          - "eslint-*"
+          - "@types/*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -39,10 +69,8 @@ updates:
       day: "monday"
       time: "09:30"
       timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 3
     groups:
-      core-actions:
+      github-actions:
         patterns:
-          - "actions/*"
-      codeql-actions:
-        patterns:
-          - "github/codeql-action/*"
+          - "*"
