@@ -23,7 +23,11 @@ concurrency:
 
 jobs:
   sync:
-    if: github.event_name != 'issues' || github.event.issue.title != '[release] production'
+    # Dependabot-triggered workflows cannot access repository secrets. Skip
+    # these PR events instead of producing a known PROJECT_TOKEN failure.
+    if: >-
+      (github.event_name != 'issues' || github.event.issue.title != '[release] production') &&
+      !(github.event_name == 'pull_request' && github.actor == 'dependabot[bot]')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
