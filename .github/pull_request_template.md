@@ -1,16 +1,20 @@
-## Summary
+## Outcome
 
-Describe the concrete outcome of this PR.
+Describe the complete vertical-slice outcome of this PR.
 
-## Issue
+## Issue / objective
 
 Closes #
 
-## Acceptance criteria
+## Included scope
 
-- [ ] Requirement is implemented without expanding scope.
-- [ ] Existing patterns/components were reused where appropriate.
-- [ ] No unnecessary dependency or speculative abstraction was introduced.
+- [ ] Implementation, tests, docs and operational metadata that belong to this objective are included together.
+- [ ] The PR avoids unrelated refactors or speculative abstractions.
+- [ ] A separate follow-up PR is only required where there is a real risk, rollback, ownership or review boundary.
+
+## Risk boundaries
+
+Describe database, security, recovery, deployment or rollback implications. State `none` when not applicable.
 
 ## Verification
 
@@ -19,9 +23,16 @@ Closes #
 - [ ] `pnpm build`
 - [ ] Relevant user flow tested
 - [ ] Database reset/type generation checked if `supabase/**` changed
+- [ ] Relevant browser, recovery or operational gate ran when affected
 
-## Ponytail review
+## Delivery batch review
 
-- [ ] Diff is the smallest safe change for the requirement.
-- [ ] No unrelated refactor.
-- [ ] Security, authorization, validation, accessibility, and data integrity were not simplified away.
+- [ ] This PR is a cohesive batch rather than a micro-PR created only because of tool/file boundaries.
+- [ ] CI fixes discovered before merge stay on this branch/PR.
+- [ ] Security, authorization, validation, accessibility, data integrity and recovery controls were not weakened for speed.
+
+## Release impact
+
+- [ ] No Production release required
+- [ ] Include in the next release train
+- [ ] Urgent protected Production release required
