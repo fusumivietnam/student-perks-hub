@@ -3,6 +3,7 @@ name: Production Monitor
 on:
   schedule:
     - cron: "17 * * * *"
+    - cron: "47 0,6,12,18 * * *"
   workflow_dispatch:
     inputs:
       simulate_failure:
@@ -10,6 +11,11 @@ on:
         type: boolean
         required: true
         default: false
+      run_deep_smoke:
+        description: Run the synthetic route smoke in addition to health identity checks
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   contents: read
@@ -22,6 +28,7 @@ concurrency:
 env:
   PRODUCTION_URL: https://student-perks-hub-fusumivietnam.vercel.app
   INCIDENT_TITLE: "[monitor] Production health check failing"
+  SMOKE_INCIDENT_TITLE: "[monitor] Production synthetic smoke failing"
 
 jobs:
   health:
@@ -172,4 +179,120 @@ jobs:
 
       - name: Fail unhealthy monitor run
         if: steps.health.outputs.healthy != 'true'
+        run: exit 1
+
+  deep-smoke:
+    name: Check critical Production routes
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '47 0,6,12,18 * * *') || (github.event_name == 'workflow_dispatch' && inputs.run_deep_smoke) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run synthetic route smoke
+        id: smoke
+        shell: bash
+        run: |
+          set +e
+          node scripts/production-smoke.mjs
+          exit_code=$?
+          set -e
+
+          healthy=false
+          if [[ "${exit_code}" -eq 0 ]]; then
+            healthy=true
+          fi
+
+          failed_routes="$(jq -r '[.checks[] | select(.ok != true) | .path] | join(", ")' production-smoke-evidence.json)"
+          checked_routes="$(jq -r '[.checks[].path] | join(", ")' production-smoke-evidence.json)"
+
+          {
+            echo "healthy=${healthy}"
+            echo "failed_routes=${failed_routes}"
+            echo "checked_routes=${checked_routes}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Open or update synthetic-smoke incident
+        if: steps.smoke.outputs.healthy != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED_ROUTES: ${{ steps.smoke.outputs.failed_routes }}
+          CHECKED_ROUTES: ${{ steps.smoke.outputs.checked_routes }}
+        run: |
+          set -euo pipefail
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${SMOKE_INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          body="Production synthetic smoke failed.
+
+          - Failed routes: \`${FAILED_ROUTES:-unknown}\`
+          - Checked routes: \`${CHECKED_ROUTES}\`
+          - Workflow run: ${run_url}
+
+          The smoke stores only route names, HTTP status and latency; response bodies, headers, cookies and credentials are not persisted. Confirm user impact and follow \`docs/INCIDENT_RESPONSE.md\`."
+
+          if [[ -n "${issue_number}" ]]; then
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "${body}"
+          else
+            gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${SMOKE_INCIDENT_TITLE}" \
+              --body "${body}" \
+              --label "type:bug" \
+              --label "area:platform" \
+              --label "needs:human"
+          fi
+
+      - name: Close recovered synthetic-smoke incident
+        if: steps.smoke.outputs.healthy == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          issue_number="$(
+            gh issue list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 --json number,title |
+              jq -r --arg title "${SMOKE_INCIDENT_TITLE}" '.[] | select(.title == $title) | .number' |
+              head -n 1
+          )"
+
+          if [[ -n "${issue_number}" ]]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue comment --repo "${GITHUB_REPOSITORY}" "${issue_number}" --body "Production synthetic smoke recovered. Verification: ${run_url}"
+            gh issue close --repo "${GITHUB_REPOSITORY}" "${issue_number}" --reason completed
+          fi
+
+      - name: Publish synthetic-smoke summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Production synthetic smoke"
+            echo ""
+            echo "- Healthy: \`${{ steps.smoke.outputs.healthy }}\`"
+            echo "- Checked routes: ${{ steps.smoke.outputs.checked_routes }}"
+            echo "- Failed routes: ${{ steps.smoke.outputs.failed_routes || 'none' }}"
+            echo "- Cadence: 4x daily plus manual dispatch"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload failure diagnostics
+        if: failure() || steps.smoke.outputs.healthy != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: production-smoke-${{ github.run_id }}
+          path: production-smoke-evidence.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Fail unhealthy synthetic smoke
+        if: steps.smoke.outputs.healthy != 'true'
         run: exit 1
