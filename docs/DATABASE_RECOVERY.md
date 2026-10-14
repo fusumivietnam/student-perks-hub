@@ -1,6 +1,7 @@
 # Database backup and recovery
 
 Last verified: 2026-10-12
+Policy hardened: 2026-10-14
 
 Student Perks Hub currently uses a cost-conscious Production recovery baseline: reviewed migrations + encrypted logical application backups + automated backup-freshness and managed-state guards. Paid Supabase PITR is not enabled.
 
@@ -15,7 +16,7 @@ Verified directly against Production on 2026-10-12:
 - `submissions`: 0 rows;
 - `student_verifications`: 0 rows.
 
-Production therefore remains inside the safe pre-managed-state window. Do not set `MANAGED_STATE_RECOVERY_READY=true` merely because the application database backup lane is healthy.
+Production therefore remains inside the safe pre-managed-state window. The managed-state watch has no manual readiness override: once Auth users or Storage objects become non-zero, the guard must remain unhealthy until a reviewed, repository-enforced recovery rehearsal is implemented.
 
 Latest scheduled encrypted Production backup verified during this review:
 
@@ -28,7 +29,7 @@ Latest scheduled encrypted Production backup verified during this review:
 
 Current operational targets:
 
-- **Application database RPO:** <=24 hours while the scheduled encrypted backup remains enabled and healthy;
+- **Application database RPO:** <=24 hours while the scheduled encrypted backup remains healthy;
 - **Database-only RTO target:** 4 hours for incident decision, clean-target provisioning, migration replay, data restore, and verification.
 
 These are operational targets rather than contractual SLAs. Re-measure them when dataset size/topology changes or after a remote restore rehearsal becomes justified.
@@ -49,6 +50,8 @@ A clean recovery target is rebuilt from reviewed migrations before application d
 ### 2. Daily encrypted logical application backup
 
 `.github/workflows/database-backup.yml` uses `scripts/database-backup.sh` to create the reviewed logical backup package. Raw SQL exists only in the ephemeral runner. The package is encrypted using AES-256-CBC with PBKDF2, integrity checked with SHA-256, and only the encrypted archive plus checksum are persisted.
+
+The scheduled backup has no repository-variable enable/disable switch. Every scheduled run attempts the backup and fails closed if protected credentials are missing or the backup cannot be produced. Planned suspension therefore requires an explicit reviewed workflow change rather than a forgotten boolean variable.
 
 The daily Production backup artifact intentionally remains on a **30-day rolling retention window**. This protects recent application database state without turning GitHub Actions artifacts into long-term archival storage.
 
@@ -101,16 +104,13 @@ Supabase managed backup/PITR or restore-to-new-project can become part of the st
 
 It also verifies that the newest successful encrypted database backup artifact is fresh, unexpired, and has an integrity digest.
 
-The watch is healthy when:
+The watch is healthy only while Auth and Storage managed-state counts are both zero. There is intentionally no repository-variable readiness override.
 
-1. Auth and Storage managed-state counts are both zero; or
-2. `MANAGED_STATE_RECOVERY_READY=true` was deliberately set only after a reviewed managed recovery strategy was implemented and rehearsed.
+If either managed-state count becomes non-zero before an automated recovery rehearsal exists, the workflow fails and opens/updates a GitHub operational issue without copying sensitive managed-state values. The guard may only be relaxed through a reviewed code change that introduces repository-verifiable recovery evidence.
 
-If the boundary is exceeded, the workflow fails and opens/updates a GitHub operational issue without copying sensitive managed-state values.
+### Criteria before managed-state recovery can be marked ready
 
-### Criteria before `MANAGED_STATE_RECOVERY_READY=true`
-
-Choose and prove one reviewed path.
+Choose and prove one reviewed path, then encode its evidence validation into the repository and recovery watch.
 
 **Managed recovery path**
 
@@ -118,7 +118,8 @@ Choose and prove one reviewed path.
 - a safe non-Production restore/restore-to-new-project rehearsal succeeds;
 - Auth users survive as expected;
 - Storage object bytes have a separate tested backup/restore path;
-- Auth/provider/SMTP/key/redirect/function configuration has a rebuild checklist.
+- Auth/provider/SMTP/key/redirect/function configuration has a rebuild checklist;
+- the rehearsal emits non-sensitive evidence that the recovery watch can verify automatically.
 
 **Separately rehearsed recovery path**
 
@@ -126,7 +127,8 @@ Choose and prove one reviewed path.
 - Storage metadata and object bytes are separately backed up/restored;
 - secrets/PII remain encrypted and access-controlled;
 - post-recovery sign-in or forced re-authentication behavior is documented and accepted;
-- non-database provider configuration has a tested rebuild checklist.
+- non-database provider configuration has a tested rebuild checklist;
+- the rehearsal emits non-sensitive evidence that the recovery watch can verify automatically.
 
 ## Incident restore model
 
