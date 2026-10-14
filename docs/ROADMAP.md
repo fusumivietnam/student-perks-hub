@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-Last updated: 2026-10-12
+Last updated: 2026-10-14
 
 Student Perks Hub is post-launch. The MVP, protected Production topology, first release lifecycle, monitoring, rollback, and encrypted database-backup baseline are complete. New work should be delivered in small vertical slices through PR review and required CI/CodeQL gates.
 
@@ -40,9 +40,10 @@ Student Perks Hub is post-launch. The MVP, protected Production topology, first 
 - [x] protected Production environment and rollback rehearsal (#46)
 - [x] observability, `/api/health`, alert/recovery path (#44)
 - [x] encrypted Production database backup + restore rehearsal baseline (#45)
-- [x] Production health monitor every 30 minutes
-- [x] daily encrypted logical database backup
+- [x] Production health monitor hourly
+- [x] daily encrypted logical database backup with no silent enable/disable variable
 - [x] daily managed-state/backup-freshness recovery watch
+- [x] managed-state readiness manual override removed; non-zero Auth/Storage fails closed until repository-verifiable recovery rehearsal exists
 - [x] weekly local encrypted backup/restore rehearsal
 - [x] fail-closed migration and canonical release identity gates
 
@@ -79,25 +80,29 @@ Keep #136 open until that real-email exercise is performed.
 Production currently has no material managed Auth/Storage state. The Free-plan baseline therefore remains intentionally cost-conscious:
 
 - application schema is recoverable from reviewed migrations;
-- application data is protected by daily encrypted logical backups;
+- application data is protected by unconditional daily encrypted logical backups;
 - backup freshness is monitored automatically;
 - local restore mechanics and authorization invariants are rehearsed weekly;
-- `MANAGED_STATE_RECOVERY_READY` stays false until Auth + Storage recovery is genuinely implemented and rehearsed.
+- managed-state recovery remains fail-closed while Auth + Storage recovery is not genuinely implemented and rehearsed;
+- there is no repository variable that can manually bypass the managed-state recovery boundary.
 
 Before meaningful Auth users or Storage objects accumulate, choose one reviewed path:
 
 1. adopt Supabase managed backup/PITR that meets the required RPO/RTO and separately cover Storage object bytes; or
 2. implement and rehearse provider-supported encrypted Auth recovery plus Storage metadata/object-byte recovery.
 
+Whichever path is selected must emit non-sensitive evidence that can be validated automatically by the repository before the managed-state watch is allowed to become healthy with non-zero counts.
+
 Do not enable paid recovery infrastructure merely to satisfy a checklist while managed state is still empty.
 
-## Operational priorities after #145
+## Operational priorities
 
-1. **Dependency/runtime/cache maintenance** — keep pinned Actions, Node, pnpm, Supabase CLI and Vercel CLI reviewed and current without overlapping CI lanes.
-2. **Observability review** — periodically validate incident auto-open/auto-close and release correlation; avoid collecting sensitive request/session data.
-3. **Recovery drills** — continue scheduled backup freshness and weekly restore rehearsal; escalate when managed Auth/Storage state becomes non-zero.
-4. **Release evidence hygiene** — keep exact SHA, deployment ID, migration identity and canonical endpoint correlated for every protected Production release.
-5. **Product iteration** — new feature slices continue through Issue → PR → CI/CodeQL → merge → protected release only when Production runtime changes.
+1. **Managed-state recovery implementation** — before meaningful Auth/Storage growth, implement one reviewed recovery path and repository-verifiable rehearsal evidence.
+2. **Dependency/runtime/cache maintenance** — keep pinned Actions, Node, pnpm, Supabase CLI and Vercel CLI reviewed and current without overlapping CI lanes.
+3. **Observability review** — periodically validate incident auto-open/auto-close and release correlation; avoid collecting sensitive request/session data.
+4. **Recovery drills** — continue scheduled backup freshness and weekly restore rehearsal; escalate immediately when managed Auth/Storage state becomes non-zero.
+5. **Release evidence hygiene** — keep exact SHA, deployment ID, migration identity and canonical endpoint correlated for every protected Production release.
+6. **Product iteration** — new feature slices continue through Issue → PR → CI/CodeQL → merge → protected release only when Production runtime changes.
 
 ## End-to-end lifecycle
 
