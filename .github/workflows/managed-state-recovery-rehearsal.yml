@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/recovery-change-scope.sh"
       - "package.json"
       - "pnpm-lock.yaml"
       - "supabase/**"
@@ -14,6 +15,7 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/recovery-change-scope.sh"
       - "package.json"
       - "pnpm-lock.yaml"
       - "supabase/**"
@@ -29,8 +31,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    name: Detect recovery relevance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.scope.outputs.relevant }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect Supabase/recovery changes
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/recovery-change-scope.sh >> "${GITHUB_OUTPUT}"
+
   rehearse:
     name: Rehearse Auth and Storage recovery boundary
+    needs: scope
+    if: needs.scope.outputs.relevant == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
