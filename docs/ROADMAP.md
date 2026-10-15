@@ -77,6 +77,10 @@ The Production implementation, canonical callback configuration, protected relea
 
 Keep #136 open until that real-email exercise is performed.
 
+### Dependency maintenance boundary
+
+Routine dependency updates remain grouped. A grouped Supabase upgrade is **not** allowed to merge when the upgraded CLI changes generated database types without the corresponding reviewed type update. Treat such a failure as a compatibility boundary, close the routine Dependabot PR, and reintroduce it later as a deliberate Supabase compatibility batch with generated types, DB validation and recovery rehearsals updated together.
+
 ## Fast Delivery Mode
 
 Routine implementation should follow `docs/DELIVERY_MODE.md`.
@@ -122,12 +126,23 @@ Do not enable paid recovery infrastructure merely to satisfy a checklist while m
 
 ## Operational priorities
 
-1. **Fast delivery throughput** — batch related implementation/tests/docs/workflow changes into cohesive PRs and avoid tool-generated micro-commits.
+1. **Backlog hygiene** — keep routine open PRs near zero; close superseded or compatibility-blocked dependency PRs instead of carrying stale maintenance work.
 2. **Managed-state recovery implementation** — before meaningful Auth/Storage growth, prove one reviewed remote recovery path and repository-verifiable evidence.
-3. **Dependency/runtime/cache maintenance** — use grouped weekly dependency PRs and keep pinned Actions, Node, pnpm, Supabase CLI and Vercel CLI current without overlapping CI lanes.
-4. **CI efficiency** — continue path-based gates and reduce duplicate build work only where it does not increase flakiness or weaken release assurance.
-5. **Observability and recovery drills** — validate incident auto-open/auto-close, backup freshness, release correlation and scheduled restore rehearsals.
-6. **Product iteration** — deliver the next product work as larger vertical slices, then release through protected release trains rather than per-merge deployments.
+3. **Product iteration** — shift the majority of implementation effort to user-facing vertical slices now that the platform baseline is stable.
+4. **Dependency/runtime/cache maintenance** — use grouped weekly dependency PRs; major or generator-changing upgrades become explicit compatibility batches.
+5. **CI efficiency** — continue path-based gates and reduce duplicate build work only where it does not increase flakiness or weaken release assurance.
+6. **Observability and recovery drills** — validate incident auto-open/auto-close, backup freshness, release correlation and scheduled restore rehearsals.
+
+## Next product delivery sequence
+
+Deliver these as larger vertical slices, normally one active feature PR at a time:
+
+1. **Discovery & conversion** — offers/search/brand/detail filtering and CTA quality.
+2. **Account & ownership** — saved/account/submission/verification UX polish and security surfaces.
+3. **Admin operations** — moderation, freshness, verification and operational queues.
+4. **UX quality** — mobile, accessibility, empty/loading/error consistency and measured performance improvements.
+
+Release by train after a coherent user-facing batch, not after each merge.
 
 ## End-to-end lifecycle
 
