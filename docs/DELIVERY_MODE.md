@@ -2,6 +2,8 @@
 
 Student Perks Hub uses a batched delivery model for routine post-launch work. The unit of delivery is a cohesive vertical slice, not an individual file or tiny implementation step.
 
+This document defines **delivery policy only**. Live project state belongs in GitHub and is surfaced through [`STATUS.md`](./STATUS.md); product direction belongs in [`ROADMAP.md`](./ROADMAP.md). Do not copy current PRs, SHAs, check results, or completed-work history into this file.
+
 ## Default delivery shape
 
 Prefer:
@@ -54,7 +56,7 @@ Every PR should describe:
 - verification performed;
 - release impact.
 
-Documentation and roadmap updates that belong to the same objective should ride in the same PR.
+Update the roadmap only when direction or sequencing actually changes. Never update Markdown merely to mirror a PR/issue/check state that GitHub already owns.
 
 ## CI policy
 

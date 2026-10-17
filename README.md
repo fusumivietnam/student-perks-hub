@@ -94,4 +94,9 @@ For normal development:
 Remote Supabase linking and production deployment are intentionally separate from
 the local workflow.
 
-See `AGENTS.md` for coding-agent rules and `docs/ROADMAP.md` for implementation order.
+## Project navigation
+
+- `docs/STATUS.md` — live GitHub-backed execution state index; no copied snapshots.
+- `docs/ROADMAP.md` — product and platform direction only.
+- `docs/DELIVERY_MODE.md` — delivery and PR policy.
+- `AGENTS.md` — coding-agent rules.
