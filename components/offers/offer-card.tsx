@@ -68,7 +68,7 @@ export function OfferCard({ offer }: OfferCardProps) {
             {providerSlug ? (
               <Link
                 href={`/brands/${providerSlug}`}
-                className="block truncate rounded-sm text-sm font-medium text-slate-500 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="block min-h-6 truncate rounded-sm py-0.5 text-sm font-medium text-slate-500 outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 {offer.provider}
               </Link>
@@ -76,9 +76,12 @@ export function OfferCard({ offer }: OfferCardProps) {
               <p className="truncate text-sm font-medium text-slate-500">{offer.provider}</p>
             )}
             {offer.category ? (
-              <p className="mt-0.5 truncate text-xs font-medium text-primary">
+              <Link
+                href={`/offers?category=${encodeURIComponent(offer.category.slug)}`}
+                className="block min-h-6 truncate rounded-sm py-1 text-xs font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
                 {offer.category.name}
-              </p>
+              </Link>
             ) : null}
           </div>
         </div>
