@@ -198,22 +198,23 @@ test("student request can be approved by admin and becomes verified", async ({ p
 });
 
 test("admin can review a pending submission", async ({ page }) => {
-  const title = `E2E Admin Review ${Date.now()}`;
+  const runId = Date.now();
+  const title = `E2E Admin Review ${runId}`;
 
   await page.goto("/submit");
   await page.getByLabel("Nhà cung cấp").fill("Admin Review Provider");
   await page.getByLabel("Tên ưu đãi").fill(title);
   await page
     .getByLabel("Link chính thức")
-    .fill("https://example.com/admin-review");
+    .fill(`https://example.com/admin-review-${runId}`);
   await page.getByRole("button", { name: "Gửi đề xuất" }).click();
   await expect(page).toHaveURL(/\/submit\?success=1/);
 
   await loginWith(page, adminEmail, adminPassword);
-  await page.goto("/admin");
+  await page.goto("/admin/submissions");
 
   await expect(
-    page.getByRole("heading", { name: "Moderation console" }),
+    page.getByRole("heading", { name: "Submission moderation" }),
   ).toBeVisible();
 
   const submission = page.locator("article").filter({ hasText: title });

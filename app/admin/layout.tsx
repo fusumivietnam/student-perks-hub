@@ -5,10 +5,10 @@ import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
 
 const adminNav = [
-  { href: "/admin", label: "Content" },
-  { href: "/admin/freshness", label: "Offer freshness" },
-  { href: "/admin/submissions", label: "Submissions" },
+  { href: "/admin", label: "Tổng quan & nội dung" },
+  { href: "/admin/submissions", label: "Đề xuất" },
   { href: "/admin/verifications", label: "Xác minh sinh viên" },
+  { href: "/admin/freshness", label: "Độ mới ưu đãi" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
-              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {item.label}
             </Link>
