@@ -21,6 +21,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+type AdminVerificationsPageProps = {
+  searchParams: Promise<{
+    status?: string | string[];
+  }>;
+};
+
 const statusCopy = {
   pending: {
     label: "Chờ duyệt",
@@ -44,6 +50,24 @@ const statusCopy = {
   },
 } as const;
 
+type StatusFilter = "all" | keyof typeof statusCopy;
+
+const filters: Array<{ value: StatusFilter; label: string }> = [
+  { value: "all", label: "Tất cả" },
+  { value: "pending", label: "Chờ duyệt" },
+  { value: "verified", label: "Đã xác minh" },
+  { value: "rejected", label: "Từ chối" },
+  { value: "expired", label: "Hết hạn" },
+];
+
+function one(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseStatusFilter(value: string | undefined): StatusFilter {
+  return filters.some((item) => item.value === value) ? (value as StatusFilter) : "all";
+}
+
 function effectiveStatus(status: string, expiresAt: string | null) {
   if (
     status === "verified" &&
@@ -55,15 +79,19 @@ function effectiveStatus(status: string, expiresAt: string | null) {
   return status as keyof typeof statusCopy;
 }
 
-export default async function AdminVerificationsPage() {
-  const auth = await getCurrentAuth();
+export default async function AdminVerificationsPage({
+  searchParams,
+}: AdminVerificationsPageProps) {
+  const [auth, params] = await Promise.all([getCurrentAuth(), searchParams]);
   if (!auth) redirect("/login?next=/admin/verifications");
 
   const admin = await getCurrentAdmin();
   if (!admin) notFound();
 
+  const filter = parseStatusFilter(one(params.status));
   const supabase = await createClient();
-  const { data: verifications, error } = await supabase
+
+  let listQuery = supabase
     .from("student_verifications")
     .select(
       "id,user_id,verification_email,institution_name,status,created_at,reviewed_at,expires_at",
@@ -71,10 +99,23 @@ export default async function AdminVerificationsPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
+  if (filter !== "all") {
+    listQuery = listQuery.eq("status", filter);
+  }
+
+  const [{ data: verifications, error }, { count: pendingCount, error: pendingError }] =
+    await Promise.all([
+      listQuery,
+      supabase
+        .from("student_verifications")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
   if (error) throw new Error("Could not load student verifications");
+  if (pendingError) throw new Error("Could not load pending verification count");
 
   const items = verifications ?? [];
-  const pendingCount = items.filter((item) => item.status === "pending").length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -96,11 +137,37 @@ export default async function AdminVerificationsPage() {
           </p>
         </div>
         <div className="rounded-2xl border bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <strong className="text-xl">{pendingCount}</strong> yêu cầu đang chờ
+          <strong className="text-xl">{pendingCount ?? 0}</strong> yêu cầu đang chờ
         </div>
       </div>
 
-      <section className="mt-8 grid gap-4">
+      <nav className="mt-6 flex flex-wrap gap-2" aria-label="Lọc yêu cầu xác minh">
+        {filters.map((item) => {
+          const active = filter === item.value;
+          const href = item.value === "all" ? "/admin/verifications" : `/admin/verifications?status=${item.value}`;
+
+          return (
+            <Link
+              key={item.value}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                active
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950"
+              }`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <p className="mt-3 text-xs text-slate-500" aria-live="polite">
+        Hiển thị {items.length} yêu cầu gần nhất{filter === "all" ? "" : ` trong trạng thái “${statusCopy[filter].label}”`}.
+      </p>
+
+      <section className="mt-6 grid gap-4">
         {items.length ? (
           items.map((verification) => {
             const resolvedStatus = effectiveStatus(
@@ -139,6 +206,14 @@ export default async function AdminVerificationsPage() {
                           timeStyle: "short",
                         }).format(new Date(verification.created_at))}
                       </span>
+                      {verification.reviewed_at ? (
+                        <span>
+                          Review: {new Intl.DateTimeFormat("vi-VN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(new Date(verification.reviewed_at))}
+                        </span>
+                      ) : null}
                       {verification.expires_at ? (
                         <span>
                           Hết hiệu lực: {new Intl.DateTimeFormat("vi-VN", {
@@ -198,7 +273,19 @@ export default async function AdminVerificationsPage() {
         ) : (
           <div className="rounded-2xl border border-dashed bg-slate-50 p-10 text-center">
             <ShieldCheck className="mx-auto size-9 text-slate-400" aria-hidden="true" />
-            <p className="mt-3 font-semibold">Chưa có yêu cầu xác minh.</p>
+            <p className="mt-3 font-semibold">
+              {filter === "all"
+                ? "Chưa có yêu cầu xác minh."
+                : `Không có yêu cầu ở trạng thái “${statusCopy[filter].label}”.`}
+            </p>
+            {filter !== "all" ? (
+              <Link
+                href="/admin/verifications"
+                className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline"
+              >
+                Xem tất cả yêu cầu
+              </Link>
+            ) : null}
           </div>
         )}
       </section>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowLeft,
   BadgeCheck,
   Clock3,
   GraduationCap,
@@ -42,24 +44,28 @@ const statusCopy = {
   pending: {
     label: "Đang chờ duyệt",
     description: "Yêu cầu đang chờ quản trị viên xem xét.",
+    nextStep: "Không cần gửi thêm yêu cầu. Quay lại trang này để theo dõi kết quả review.",
     className: "border-amber-200 bg-amber-50 text-amber-800",
     Icon: Clock3,
   },
   verified: {
     label: "Đã xác minh",
     description: "Tài khoản hiện có trạng thái sinh viên còn hiệu lực.",
+    nextStep: "Bạn không cần thao tác thêm cho đến khi trạng thái xác minh hết hiệu lực.",
     className: "border-emerald-200 bg-emerald-50 text-emerald-800",
     Icon: BadgeCheck,
   },
   rejected: {
     label: "Chưa thể xác minh",
     description: "Yêu cầu trước đã bị từ chối. Bạn có thể gửi một yêu cầu mới.",
+    nextStep: "Kiểm tra lại tên trường hoặc tổ chức giáo dục rồi gửi yêu cầu mới khi sẵn sàng.",
     className: "border-red-200 bg-red-50 text-red-800",
     Icon: XCircle,
   },
   expired: {
     label: "Đã hết hạn",
     description: "Trạng thái xác minh trước đã hết hiệu lực. Bạn có thể xác minh lại.",
+    nextStep: "Gửi một yêu cầu mới để khôi phục trạng thái sinh viên.",
     className: "border-slate-200 bg-slate-50 text-slate-700",
     Icon: Clock3,
   },
@@ -105,10 +111,19 @@ export default async function VerificationPage({
   const StatusIcon = status?.Icon;
   const canRequest =
     !verification || resolvedStatus === "rejected" || resolvedStatus === "expired";
+  const dateFormatter = new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" });
 
   return (
     <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="rounded-[2rem] border bg-gradient-to-br from-blue-50 via-white to-violet-50 p-6 shadow-sm sm:p-10">
+      <Link
+        href="/account"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Tài khoản
+      </Link>
+
+      <div className="mt-5 rounded-[2rem] border bg-gradient-to-br from-blue-50 via-white to-violet-50 p-6 shadow-sm sm:p-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-primary">Quyền lợi sinh viên</p>
@@ -157,6 +172,10 @@ export default async function VerificationPage({
                 </div>
               </div>
 
+              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+                <strong>Bước tiếp theo:</strong> {status.nextStep}
+              </div>
+
               <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-4">
                   <dt className="text-slate-500">Trường / tổ chức</dt>
@@ -173,18 +192,22 @@ export default async function VerificationPage({
                 <div className="rounded-xl bg-slate-50 p-4">
                   <dt className="text-slate-500">Ngày gửi</dt>
                   <dd className="mt-1 font-semibold text-slate-950">
-                    {new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(
-                      new Date(verification.created_at),
-                    )}
+                    {dateFormatter.format(new Date(verification.created_at))}
                   </dd>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
+                  <dt className="text-slate-500">Ngày review</dt>
+                  <dd className="mt-1 font-semibold text-slate-950">
+                    {verification.reviewed_at
+                      ? dateFormatter.format(new Date(verification.reviewed_at))
+                      : "Chưa review"}
+                  </dd>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
                   <dt className="text-slate-500">Hiệu lực đến</dt>
                   <dd className="mt-1 font-semibold text-slate-950">
                     {verification.expires_at
-                      ? new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(
-                          new Date(verification.expires_at),
-                        )
+                      ? dateFormatter.format(new Date(verification.expires_at))
                       : "Chưa áp dụng"}
                   </dd>
                 </div>
