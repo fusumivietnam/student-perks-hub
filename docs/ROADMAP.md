@@ -1,182 +1,82 @@
-# Implementation Roadmap
+# Product roadmap
 
-Last updated: 2026-10-15
+This document defines direction and sequencing only. It deliberately does **not** record the current PR, main SHA, CI state, completed checkboxes, or open blockers. Those are live repository state and belong in GitHub; use [`STATUS.md`](./STATUS.md) as the stable entry point.
 
-Student Perks Hub is post-launch. The MVP, protected Production topology, first release lifecycle, monitoring, rollback, and encrypted database-backup baseline are complete. Routine work now uses **Fast Delivery Mode**: deliver cohesive vertical slices in batched PRs, prefer one atomic commit when practical, keep required CI/CodeQL/domain gates, auto-merge after green checks, and release through a protected release train only when Production runtime changes justify it.
+## Delivery model
 
-## Current snapshot
+Routine post-launch work follows [`DELIVERY_MODE.md`](./DELIVERY_MODE.md): one cohesive vertical slice per branch/PR, protected CI and CodeQL gates, auto-merge after green checks, and release trains rather than deploy-on-every-merge.
 
-### Platform and delivery foundation — complete
-
-- [x] Next.js App Router + TypeScript + Tailwind CSS 4 baseline
-- [x] Supabase SSR clients, authentication, RLS, migrations, deterministic seed, generated database types
-- [x] local-first Supabase CLI + Docker development/CI workflow
-- [x] fresh Codespaces local-stack verification (#7)
-- [x] Node 24 LTS + pinned pnpm + committed lockfile
-- [x] typecheck, lint, production build, database/RLS validation
-- [x] critical Browser E2E, automated accessibility, Lighthouse budget
-- [x] CodeQL, Dependabot, secret scanning, push protection
-- [x] protected `main`, squash-only PR flow, repository governance
-- [x] GitHub Project synchronization and delivery metadata
-- [x] Vercel Production + dedicated Supabase Production in Singapore
-- [x] cost-optimized Preview model with no Production privileged Supabase credentials
-- [x] exact-SHA protected Production release control plane
-- [x] canonical Production release/deployment identity verification
-- [x] Fast Delivery Mode governance for batched vertical-slice PRs and release trains
-
-### Product baseline — complete
-
-- [x] offer/category discovery and detail surfaces
-- [x] authentication and account flows
-- [x] bookmarks and offer submission
-- [x] admin authorization/moderation
-- [x] privacy-first student verification
-- [x] production UI/loading/error/empty states
-- [x] metadata, canonical URLs, sitemap, robots, legal/privacy pages
-- [x] password-recovery implementation and Production deployment
-
-### Production operations — active and proven
-
-- [x] first-production lifecycle and v1.0.0 evidence (#21)
-- [x] protected Production environment and rollback rehearsal (#46)
-- [x] observability, `/api/health`, alert/recovery path (#44)
-- [x] encrypted Production database backup + restore rehearsal baseline (#45)
-- [x] Production health monitor hourly
-- [x] daily encrypted logical database backup with no silent enable/disable variable
-- [x] daily managed-state/backup-freshness recovery watch
-- [x] managed-state readiness manual override removed; non-zero Auth/Storage fails closed until repository-verifiable recovery rehearsal exists
-- [x] weekly local encrypted backup/restore rehearsal
-- [x] managed Auth/Storage synthetic recovery rehearsal with 90-day structured evidence
-- [x] fail-closed migration and canonical release identity gates
-
-## Current post-launch work
-
-### #155 — Repository-verifiable Auth/Storage recovery
-
-Status: **Active boundary follow-up**
-
-- [x] remove manual managed-state readiness override
-- [x] add synthetic local Auth loss/reprovision rehearsal
-- [x] add Storage object-byte loss/restore rehearsal with SHA-256 verification
-- [x] emit structured non-sensitive evidence retained for 90 days
-- [x] run rehearsal on protected-main changes and weekly schedule
-- [x] document provider/project rebuild checklist
-- [ ] prove the selected remote recovery path before Production managed state becomes material
-
-### #136 — Real password-recovery email acceptance
-
-Status: **Deferred; non-blocking for current operations work**
-
-The Production implementation, canonical callback configuration, protected release, fail-closed callback behavior, and recovery-session enforcement are already verified. The remaining acceptance exercise requires a real test mailbox:
-
-1. request password recovery for a real test account;
-2. follow the Supabase email link through `/auth/callback`;
-3. reach `/reset-password` with a valid recovery session;
-4. change the password and verify sign-out;
-5. sign in again with the new password.
-
-Keep #136 open until that real-email exercise is performed.
-
-### Dependency maintenance boundary
-
-Routine dependency updates remain grouped. A grouped Supabase upgrade is **not** allowed to merge when the upgraded CLI changes generated database types without the corresponding reviewed type update. Treat such a failure as a compatibility boundary, close the routine Dependabot PR, and reintroduce it later as a deliberate Supabase compatibility batch with generated types, DB validation and recovery rehearsals updated together.
-
-## Fast Delivery Mode
-
-Routine implementation should follow `docs/DELIVERY_MODE.md`.
-
-Default shape:
+## Product completion sequence
 
 ```text
-objective / issue
-  -> one implementation branch
-  -> one cohesive batch
-  -> one atomic commit when practical
-  -> one PR
-  -> CI + CodeQL + relevant domain gates
-  -> auto-merge
-  -> protected main
-  -> release train when needed
+Discovery & conversion
+  -> Account & ownership
+  -> Student verification
+  -> Submission workflow
+  -> Admin operations
+  -> UX / accessibility / performance polish
+  -> Mature production iteration
 ```
 
-Documentation, tests, workflow changes and cleanup that directly belong to the same objective should remain in the same PR. Split only for real security, destructive-migration, ownership, rollback or review boundaries.
+The sequence is directional, not a status checklist. A slice may be revisited when evidence or user needs justify it.
 
-Dependency updates are grouped weekly into a small set of coherent fault domains rather than one PR per patch package.
+### Discovery & conversion
 
-## Recovery maturity boundary
+Improve offers/search/brand/detail navigation, filtering, recovery from empty states, CTA quality, and conversion paths.
 
-Production currently has no material managed Auth/Storage state. The Free-plan baseline therefore remains intentionally cost-conscious:
+### Account & ownership
 
-- application schema is recoverable from reviewed migrations;
-- application data is protected by unconditional daily encrypted logical backups;
-- backup freshness is monitored automatically;
-- local restore mechanics and authorization invariants are rehearsed weekly;
-- synthetic Auth/Storage loss-and-recovery mechanics are rehearsed weekly with structured evidence;
-- managed-state recovery remains fail-closed while a real remote recovery path is not genuinely proven;
-- there is no repository variable that can manually bypass the managed-state recovery boundary.
+Keep saved offers, account state, submission ownership/history, authentication return paths, and authenticated/anonymous transitions consistent.
 
-Before meaningful Auth users or Storage objects accumulate, choose one reviewed path:
+### Student verification
 
-1. adopt Supabase managed backup/PITR that meets the required RPO/RTO and separately cover Storage object bytes; or
-2. implement and rehearse provider-supported encrypted Auth recovery plus Storage metadata/object-byte recovery.
+Keep the verification lifecycle understandable, privacy-first, reviewable by admins, and explicit about pending/verified/rejected/expired states.
 
-Whichever path is selected must emit non-sensitive evidence that can be validated automatically by the repository before the managed-state watch is allowed to become healthy with non-zero counts.
+### Submission workflow
 
-Do not enable paid recovery infrastructure merely to satisfy a checklist while managed state is still empty.
+Improve submission validation, ownership/history, duplicate handling, moderation lifecycle, and contributor feedback.
 
-## Operational priorities
+### Admin operations
 
-1. **Backlog hygiene** — keep routine open PRs near zero; close superseded or compatibility-blocked dependency PRs instead of carrying stale maintenance work.
-2. **Managed-state recovery implementation** — before meaningful Auth/Storage growth, prove one reviewed remote recovery path and repository-verifiable evidence.
-3. **Product iteration** — shift the majority of implementation effort to user-facing vertical slices now that the platform baseline is stable.
-4. **Dependency/runtime/cache maintenance** — use grouped weekly dependency PRs; major or generator-changing upgrades become explicit compatibility batches.
-5. **CI efficiency** — continue path-based gates and reduce duplicate build work only where it does not increase flakiness or weaken release assurance.
-6. **Observability and recovery drills** — validate incident auto-open/auto-close, backup freshness, release correlation and scheduled restore rehearsals.
+Improve moderation, freshness, verification, content-management, and operational queues without weakening authorization boundaries.
 
-## Next product delivery sequence
+### UX quality
 
-Deliver these as larger vertical slices, normally one active feature PR at a time:
+Continuously improve responsive behavior, accessibility, loading/error/empty states, metadata/SEO, and measured performance.
 
-1. **Discovery & conversion** — offers/search/brand/detail filtering and CTA quality.
-2. **Account & ownership** — saved/account/submission/verification UX polish and security surfaces.
-3. **Admin operations** — moderation, freshness, verification and operational queues.
-4. **UX quality** — mobile, accessibility, empty/loading/error consistency and measured performance improvements.
+## Platform and operations track
 
-Release by train after a coherent user-facing batch, not after each merge.
-
-## End-to-end lifecycle
+Product work runs alongside a smaller platform/operations track:
 
 ```text
-Idea / requirement
-  -> Issue / Project triage
-  -> delivery batch / technical decision
-  -> implementation branch
-  -> cohesive vertical slice
-  -> Pull Request
-  -> CI Gate + CodeQL + relevant database/browser/recovery gates
-  -> optional Vercel Preview UI/build review
-  -> auto-merge to protected main
-  -> release train / exact release candidate SHA
-  -> Production migration fail-closed gate
-  -> protected immutable Vercel Production deployment
-  -> canonical alias + smoke + release evidence
-  -> monitoring / backup / recovery watch
-  -> incident response / rollback / restore rehearsal
-  -> retrospective / follow-up only when it crosses a real boundary
+protected CI / CodeQL
+  -> release safety
+  -> monitoring and recovery rehearsals
+  -> remote managed-state recovery proof
+  -> dependency/runtime compatibility
+  -> operational maturity
 ```
+
+Platform work should be driven by a concrete risk, bottleneck, compatibility boundary, or production requirement rather than routine churn.
 
 ## Architecture guardrails
 
-- local development and PR validation use Supabase CLI/Docker;
-- do not introduce a second local PostgreSQL stack;
-- SQL migrations and declarative schemas remain PostgreSQL-first;
-- Preview never receives Production privileged credentials;
-- automatic Vercel Production deployment from `main` remains disabled;
-- Production deploys use the protected exact-SHA release control plane only;
-- destructive/coordinated migrations require explicit recovery planning and are never auto-applied;
-- semantic retrieval tools are discovery aids, never source truth, and do not run in CI/Release;
-- URL state before global client state;
-- Server Components before client fetching where applicable;
-- framework/native capability before adding dependencies;
-- no unrelated refactors inside feature PRs;
-- security, authorization, RLS, validation, accessibility, data integrity, recovery, and auditability are never simplified away.
+- Local development and PR validation use Supabase CLI/Docker.
+- Declarative schemas and reviewed migrations remain the database source of truth.
+- Preview never receives Production privileged credentials.
+- Production deploys use the protected exact-SHA release control plane.
+- Destructive/coordinated migrations require explicit recovery planning and are never auto-applied.
+- URL state is preferred before introducing global client state.
+- Server Components are preferred before client fetching where applicable.
+- Framework/native capability is preferred before adding dependencies.
+- Security, authorization, RLS, validation, accessibility, data integrity, recovery, and auditability are not traded away for delivery speed.
+
+## Documentation ownership
+
+- **Live execution state:** GitHub PRs, Issues, Actions, and Project views via [`STATUS.md`](./STATUS.md).
+- **Delivery policy:** [`DELIVERY_MODE.md`](./DELIVERY_MODE.md).
+- **Release execution:** [`RELEASE_RUNBOOK.md`](./RELEASE_RUNBOOK.md) and [`RELEASE_CONTROL_PLANE.md`](./RELEASE_CONTROL_PLANE.md).
+- **Recovery:** [`DATABASE_RECOVERY.md`](./DATABASE_RECOVERY.md) and [`MANAGED_STATE_RECOVERY_CHECKLIST.md`](./MANAGED_STATE_RECOVERY_CHECKLIST.md).
+- **Operations:** [`OBSERVABILITY.md`](./OBSERVABILITY.md) and [`INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md).
+
+Do not copy live status or completed-work history back into this roadmap. Git history and merged PRs already provide that record.
