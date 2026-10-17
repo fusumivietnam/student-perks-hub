@@ -21,14 +21,18 @@ function one(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+const errorCopy: Record<string, string> = {
+  invalid: "Vui lòng kiểm tra lại nhà cung cấp, tên ưu đãi và link chính thức.",
+  duplicate:
+    "Link này đã có một đề xuất đang được xử lý hoặc đã được duyệt. Không cần gửi lại.",
+  unavailable: "Chưa thể gửi đề xuất lúc này. Vui lòng thử lại sau.",
+};
+
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
-  const [auth, params] = await Promise.all([
-    getCurrentAuth(),
-    searchParams,
-  ]);
+  const [auth, params] = await Promise.all([getCurrentAuth(), searchParams]);
 
   const success = one(params.success);
-  const error = one(params.error);
+  const errorCode = one(params.error);
 
   return (
     <section className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
@@ -41,26 +45,41 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
         thái pending và không được publish trực tiếp.
       </p>
 
-      <p className="mt-3 text-sm text-slate-500">
-        {auth
-          ? `Đang gửi với tài khoản ${auth.email ?? "đã đăng nhập"}.`
-          : "Bạn có thể gửi ẩn danh; đăng nhập sẽ giúp theo dõi submission của mình."}
-      </p>
+      <div className="mt-4 rounded-xl border bg-slate-50 p-4 text-sm text-slate-600">
+        {auth ? (
+          <>
+            Đang gửi với tài khoản <strong className="text-slate-950">{auth.email ?? "đã đăng nhập"}</strong>.
+            Sau khi gửi, bạn sẽ được chuyển thẳng tới lịch sử đề xuất để theo dõi trạng thái.
+          </>
+        ) : (
+          <>
+            Bạn có thể gửi ẩn danh, nhưng đề xuất ẩn danh không xuất hiện trong lịch sử tài khoản sau này. {" "}
+            <Link
+              href="/login?next=/submit"
+              className="font-semibold text-primary underline underline-offset-4"
+            >
+              Đăng nhập trước khi gửi
+            </Link>{" "}
+            nếu muốn theo dõi vòng đời đề xuất.
+          </>
+        )}
+      </div>
 
       {success ? (
-        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+        <div
+          className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700"
+          role="status"
+        >
           <p>Đã nhận đề xuất. Offer chỉ được publish sau khi được kiểm tra.</p>
-          {auth ? (
-            <Link href="/account" className="mt-2 inline-block font-semibold underline underline-offset-4">
-              Theo dõi trạng thái trong tài khoản
-            </Link>
-          ) : null}
         </div>
       ) : null}
 
-      {error ? (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+      {errorCode ? (
+        <div
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          role="alert"
+        >
+          {errorCopy[errorCode] ?? errorCopy.unavailable}
         </div>
       ) : null}
 

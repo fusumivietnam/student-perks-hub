@@ -46,11 +46,11 @@ export async function updatePassword(formData: FormData) {
 
 export async function cancelSubmission(formData: FormData) {
   const auth = await getCurrentAuth();
-  if (!auth) redirect("/login?next=/account");
+  if (!auth) redirect("/login?next=/account/submissions");
 
   const parsed = submissionIdSchema.safeParse(formData.get("submissionId"));
   if (!parsed.success) {
-    redirect("/account?error=Yêu+cầu+hủy+không+hợp+lệ");
+    redirect("/account/submissions?error=invalid-cancel");
   }
 
   const supabase = await createClient();
@@ -60,12 +60,12 @@ export async function cancelSubmission(formData: FormData) {
 
   if (error) {
     console.error("Failed to cancel submission", error);
-    redirect("/account?error=Không+thể+hủy+đề+xuất+lúc+này");
+    redirect("/account/submissions?error=cancel-failed");
   }
 
   if (!data) {
-    redirect("/account?error=Đề+xuất+đã+được+xử+lý+hoặc+không+còn+có+thể+hủy");
+    redirect("/account/submissions?error=not-cancellable");
   }
 
-  redirect("/account?success=Đề+xuất+đã+được+hủy");
+  redirect("/account/submissions?cancelled=1");
 }
