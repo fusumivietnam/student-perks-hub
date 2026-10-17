@@ -44,6 +44,23 @@ function hrefWith(
   return query ? `/offers?${query}` : "/offers";
 }
 
+function benefitLabel(value: string) {
+  return {
+    free: "Miễn phí",
+    discount: "Giảm giá",
+    credit: "Credit",
+    trial: "Dùng thử",
+    other: "Khác",
+  }[value] ?? value;
+}
+
+function audienceLabel(value: string) {
+  return {
+    student: "Sinh viên",
+    teacher: "Giáo viên",
+  }[value] ?? value;
+}
+
 export default async function OffersPage({
   searchParams,
 }: {
@@ -64,6 +81,7 @@ export default async function OffersPage({
 
   const totalPages = Math.max(1, Math.ceil(result.count / result.pageSize));
   const currentPage = Math.min(result.page, totalPages);
+  const selectedCategory = categories.find((item) => item.slug === category);
 
   const current = new URLSearchParams();
   if (q) current.set("q", q);
@@ -71,6 +89,37 @@ export default async function OffersPage({
   if (benefit) current.set("benefit", benefit);
   if (audience) current.set("audience", audience);
   if (sort && sort !== "recent") current.set("sort", sort);
+
+  const activeFilters = [
+    q
+      ? {
+          key: "q",
+          label: `Từ khóa: ${q}`,
+          href: hrefWith(current, { q: null, page: null }),
+        }
+      : null,
+    category
+      ? {
+          key: "category",
+          label: `Danh mục: ${selectedCategory?.name ?? category}`,
+          href: hrefWith(current, { category: null, page: null }),
+        }
+      : null,
+    benefit
+      ? {
+          key: "benefit",
+          label: `Quyền lợi: ${benefitLabel(benefit)}`,
+          href: hrefWith(current, { benefit: null, page: null }),
+        }
+      : null,
+    audience
+      ? {
+          key: "audience",
+          label: `Đối tượng: ${audienceLabel(audience)}`,
+          href: hrefWith(current, { audience: null, page: null }),
+        }
+      : null,
+  ].filter((item): item is { key: string; label: string; href: string } => Boolean(item));
 
   const filterFields = (
     <div className="grid gap-4">
@@ -164,6 +213,7 @@ export default async function OffersPage({
           type="search"
           name="q"
           defaultValue={q}
+          maxLength={80}
           placeholder="Tìm GitHub, Notion, Figma, Azure..."
           className="min-w-0 flex-1 rounded-xl px-3 py-2 outline-none"
         />
@@ -175,6 +225,42 @@ export default async function OffersPage({
           Tìm
         </button>
       </form>
+
+      {categories.length > 0 ? (
+        <nav aria-label="Danh mục phổ biến" className="mt-4 flex flex-wrap gap-2">
+          {categories.slice(0, 6).map((item) => (
+            <Link
+              key={item.id}
+              href={hrefWith(current, { category: item.slug, page: null })}
+              aria-current={category === item.slug ? "page" : undefined}
+              className="rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:bg-blue-50 aria-[current=page]:text-primary"
+            >
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
+      {activeFilters.length > 0 ? (
+        <div className="mt-5 flex flex-wrap items-center gap-2" aria-label="Bộ lọc đang áp dụng">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Đang lọc
+          </span>
+          {activeFilters.map((filter) => (
+            <Link
+              key={filter.key}
+              href={filter.href}
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+              aria-label={`Bỏ ${filter.label}`}
+            >
+              {filter.label} ×
+            </Link>
+          ))}
+          <Link href="/offers" className="text-xs font-semibold text-primary hover:underline">
+            Xóa tất cả
+          </Link>
+        </div>
+      ) : null}
 
       <div className="mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
         <aside className="hidden lg:block">
@@ -194,14 +280,14 @@ export default async function OffersPage({
           </details>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500" aria-live="polite">
               {result.count} ưu đãi
             </p>
-            {(q || category || benefit || audience) && (
+            {sort !== "recent" ? (
               <p className="text-sm text-slate-500">
-                Bộ lọc đang hoạt động
+                Sắp xếp: {sort === "popular" ? "Phổ biến" : "Tên A–Z"}
               </p>
-            )}
+            ) : null}
           </div>
 
           {result.offers.length === 0 ? (
@@ -210,6 +296,14 @@ export default async function OffersPage({
               <p className="mt-1 text-sm text-slate-500">
                 Thử đổi từ khóa hoặc xóa bớt bộ lọc.
               </p>
+              <div className="mt-4 flex flex-wrap justify-center gap-3">
+                <Link href="/offers" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">
+                  Xóa bộ lọc
+                </Link>
+                <Link href="/categories" className="rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                  Duyệt danh mục
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -228,6 +322,7 @@ export default async function OffersPage({
                 <Link
                   href={hrefWith(current, { page: String(currentPage - 1) })}
                   className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                  rel="prev"
                 >
                   Trang trước
                 </Link>
@@ -243,6 +338,7 @@ export default async function OffersPage({
                 <Link
                   href={hrefWith(current, { page: String(currentPage + 1) })}
                   className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                  rel="next"
                 >
                   Trang sau
                 </Link>
