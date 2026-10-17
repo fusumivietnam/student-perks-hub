@@ -32,7 +32,7 @@ export async function submitOffer(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect("/submit?error=Vui+lòng+kiểm+tra+lại+thông+tin");
+    redirect("/submit?error=invalid");
   }
 
   const [auth, supabase] = await Promise.all([
@@ -50,14 +50,12 @@ export async function submitOffer(formData: FormData) {
   });
 
   if (error?.code === "23505") {
-    redirect(
-      "/submit?error=Link+này+đã+có+một+đề+xuất+đang+được+xử+lý+hoặc+đã+được+duyệt",
-    );
+    redirect("/submit?error=duplicate");
   }
 
   if (error) {
     console.error("Failed to create offer submission", error);
-    redirect("/submit?error=Không+thể+gửi+đề+xuất+lúc+này");
+    redirect("/submit?error=unavailable");
   }
 
   if (auth) {
