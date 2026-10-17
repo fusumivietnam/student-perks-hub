@@ -65,6 +65,29 @@ test("saved page enforces the authentication boundary", async ({ page }) => {
   expect(url.searchParams.get("next")).toBe("/saved");
 });
 
+test("login preserves the ownership return path across an authentication error", async ({ page }) => {
+  if (!testEmail || !testPassword) {
+    throw new Error("E2E test credentials are missing.");
+  }
+
+  await page.goto("/login?next=/account/submissions");
+  await page.getByLabel("Email").fill(testEmail);
+  await page.getByLabel("Mật khẩu").fill("Wrong-Pass-2026!");
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+
+  const failedUrl = new URL(page.url());
+  expect(failedUrl.pathname).toBe("/login");
+  expect(failedUrl.searchParams.get("next")).toBe("/account/submissions");
+  await expect(page.getByText("Email hoặc mật khẩu không đúng")).toBeVisible();
+
+  await page.getByLabel("Email").fill(testEmail);
+  await page.getByLabel("Mật khẩu").fill(testPassword);
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/account\/submissions$/);
+  await expect(page.getByRole("heading", { name: "Đề xuất của tôi" })).toBeVisible();
+});
+
 test("authenticated user can save and remove an offer", async ({ page }) => {
   await login(page);
 
@@ -83,6 +106,7 @@ test("authenticated user can save and remove an offer", async ({ page }) => {
 
   await page.goto("/saved");
   await expect(page.getByText("Bạn chưa lưu ưu đãi nào.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Khám phá ưu đãi" })).toBeVisible();
 });
 
 test("offer submission stays pending after browser submission", async ({

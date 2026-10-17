@@ -16,15 +16,33 @@ function safeNextPath(value: string | undefined) {
   return value;
 }
 
+function loginRedirect(params: { error?: string; message?: string; next?: string }) {
+  const search = new URLSearchParams();
+  if (params.error) search.set("error", params.error);
+  if (params.message) search.set("message", params.message);
+
+  const next = safeNextPath(params.next);
+  if (next !== "/") search.set("next", next);
+
+  const query = search.toString();
+  return query ? `/login?${query}` : "/login";
+}
+
 export async function signIn(formData: FormData) {
+  const next = typeof formData.get("next") === "string" ? String(formData.get("next")) : undefined;
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    next: formData.get("next") || undefined,
+    next,
   });
 
   if (!parsed.success) {
-    redirect("/login?error=Thông+tin+đăng+nhập+không+hợp+lệ");
+    redirect(
+      loginRedirect({
+        error: "Thông tin đăng nhập không hợp lệ",
+        next,
+      }),
+    );
   }
 
   const supabase = await createClient();
@@ -34,21 +52,32 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=Email+hoặc+mật+khẩu+không+đúng");
+    redirect(
+      loginRedirect({
+        error: "Email hoặc mật khẩu không đúng",
+        next: parsed.data.next,
+      }),
+    );
   }
 
   redirect(safeNextPath(parsed.data.next));
 }
 
 export async function signUp(formData: FormData) {
+  const next = typeof formData.get("next") === "string" ? String(formData.get("next")) : undefined;
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    next: formData.get("next") || undefined,
+    next,
   });
 
   if (!parsed.success) {
-    redirect("/login?error=Email+hoặc+mật+khẩu+không+hợp+lệ");
+    redirect(
+      loginRedirect({
+        error: "Email hoặc mật khẩu không hợp lệ",
+        next,
+      }),
+    );
   }
 
   const supabase = await createClient();
@@ -58,14 +87,24 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=Không+thể+tạo+tài+khoản");
+    redirect(
+      loginRedirect({
+        error: "Không thể tạo tài khoản",
+        next: parsed.data.next,
+      }),
+    );
   }
 
   if (data.session) {
     redirect(safeNextPath(parsed.data.next));
   }
 
-  redirect("/login?message=Kiểm+tra+email+để+xác+nhận+tài+khoản");
+  redirect(
+    loginRedirect({
+      message: "Kiểm tra email để xác nhận tài khoản",
+      next: parsed.data.next,
+    }),
+  );
 }
 
 export async function signOut() {

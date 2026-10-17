@@ -44,6 +44,10 @@ const submissionStatus = {
     label: "Không được duyệt",
     className: "border-red-200 bg-red-50 text-red-700",
   },
+  cancelled: {
+    label: "Đã hủy",
+    className: "border-slate-200 bg-slate-50 text-slate-600",
+  },
 } as const;
 
 function verificationLabel(status: string | undefined, expiresAt: string | null | undefined) {
@@ -66,17 +70,32 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   if (!auth) redirect("/login?next=/account");
 
   const supabase = await createClient();
-  const [bookmarksResult, submissionsResult, verificationResult] = await Promise.all([
+  const [
+    bookmarksResult,
+    submissionCountResult,
+    pendingCountResult,
+    submissionsResult,
+    verificationResult,
+  ] = await Promise.all([
     supabase
       .from("bookmarks")
       .select("offer_id", { count: "exact", head: true })
       .eq("user_id", auth.id),
     supabase
       .from("submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("submitter_user_id", auth.id),
+    supabase
+      .from("submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("submitter_user_id", auth.id)
+      .eq("status", "pending"),
+    supabase
+      .from("submissions")
       .select("id,provider,title,status,created_at")
       .eq("submitter_user_id", auth.id)
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(5),
     supabase
       .from("student_verifications")
       .select("status,expires_at")
@@ -86,12 +105,19 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       .maybeSingle(),
   ]);
 
-  if (bookmarksResult.error || submissionsResult.error || verificationResult.error) {
+  if (
+    bookmarksResult.error ||
+    submissionCountResult.error ||
+    pendingCountResult.error ||
+    submissionsResult.error ||
+    verificationResult.error
+  ) {
     throw new Error("Could not load account data");
   }
 
   const submissions = submissionsResult.data ?? [];
-  const pendingCount = submissions.filter((item) => item.status === "pending").length;
+  const submissionCount = submissionCountResult.count ?? 0;
+  const pendingCount = pendingCountResult.count ?? 0;
   const verification = verificationResult.data;
   const success = one(params.success);
   const error = one(params.error);
@@ -146,18 +172,24 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <p className="mt-1 text-sm text-slate-500">Mở danh sách bookmark của bạn.</p>
         </Link>
 
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+        <Link
+          href="/account/submissions"
+          className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <span className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-600">
               <FileText className="size-5" aria-hidden="true" />
             </span>
-            <span className="text-2xl font-black">{submissions.length}</span>
+            <span className="text-2xl font-black">{submissionCount}</span>
           </div>
           <p className="mt-4 font-bold">Đề xuất đã gửi</p>
-          <p className="mt-1 text-sm text-slate-500">Tối đa 20 đề xuất gần nhất.</p>
-        </div>
+          <p className="mt-1 text-sm text-slate-500">Mở toàn bộ lịch sử và trạng thái đề xuất.</p>
+        </Link>
 
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+        <Link
+          href="/account/submissions"
+          className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <span className="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-600">
               <Clock3 className="size-5" aria-hidden="true" />
@@ -166,7 +198,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           </div>
           <p className="mt-4 font-bold">Đang chờ duyệt</p>
           <p className="mt-1 text-sm text-slate-500">Đề xuất chưa có quyết định cuối.</p>
-        </div>
+        </Link>
 
         <Link
           href="/verification"
@@ -187,15 +219,25 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-primary">Submission</p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight">Đề xuất của bạn</h2>
+              <h2 className="mt-1 text-2xl font-bold tracking-tight">Đề xuất gần đây</h2>
             </div>
-            <Link
-              href="/submit"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              <Send className="size-4" aria-hidden="true" />
-              Gửi ưu đãi mới
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              {submissionCount > submissions.length ? (
+                <Link
+                  href="/account/submissions"
+                  className="inline-flex min-h-10 items-center rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  Xem tất cả
+                </Link>
+              ) : null}
+              <Link
+                href="/submit"
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+              >
+                <Send className="size-4" aria-hidden="true" />
+                Gửi ưu đãi mới
+              </Link>
+            </div>
           </div>
 
           {submissions.length ? (
@@ -265,7 +307,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 className="rounded-xl border px-3 py-2.5"
               />
             </label>
-            <button className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
+            <button className="min-h-11 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
               Cập nhật mật khẩu
             </button>
           </form>
