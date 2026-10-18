@@ -196,8 +196,9 @@ export default async function OffersPage({
   );
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <p className="text-sm font-semibold text-primary">Khám phá</p>
+    <section className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <div className="rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-sky-50 px-5 py-9 sm:px-9 sm:py-11">
+      <p className="ui-eyebrow">Khám phá</p>
       <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
         Tất cả ưu đãi
       </h1>
@@ -207,7 +208,7 @@ export default async function OffersPage({
 
       <form
         action="/offers"
-        className="mt-8 flex gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-sm"
+        className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:flex-nowrap"
       >
         <input
           type="search"
@@ -216,16 +217,18 @@ export default async function OffersPage({
           defaultValue={q}
           maxLength={80}
           placeholder="Tìm GitHub, Notion, Figma, Azure..."
-          className="min-w-0 flex-1 rounded-xl px-3 py-2 outline-none"
+          className="min-h-11 min-w-0 flex-1 basis-full rounded-xl px-3 py-2 outline-none sm:basis-auto"
         />
         {category ? <input type="hidden" name="category" value={category} /> : null}
         {benefit ? <input type="hidden" name="benefit" value={benefit} /> : null}
         {audience ? <input type="hidden" name="audience" value={audience} /> : null}
         {sort !== "recent" ? <input type="hidden" name="sort" value={sort} /> : null}
-        <button className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">
+        <button className="min-h-11 w-full rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto">
           Tìm
         </button>
       </form>
+
+      </div>
 
       {categories.length > 0 ? (
         <nav aria-label="Danh mục phổ biến" className="mt-4 flex flex-wrap gap-2">
@@ -263,16 +266,16 @@ export default async function OffersPage({
         </div>
       ) : null}
 
-      <div className="mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+      <div className="mt-8 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
         <aside className="hidden lg:block">
-          <form action="/offers" className="sticky top-24 rounded-2xl border bg-slate-50 p-4">
+          <form action="/offers" className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             {q ? <input type="hidden" name="q" value={q} /> : null}
             {filterFields}
           </form>
         </aside>
 
         <div>
-          <details className="mb-6 rounded-2xl border bg-slate-50 p-4 lg:hidden">
+          <details className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:hidden">
             <summary className="cursor-pointer font-semibold">Bộ lọc</summary>
             <form action="/offers" className="mt-4">
               {q ? <input type="hidden" name="q" value={q} /> : null}
@@ -307,7 +310,7 @@ export default async function OffersPage({
               </div>
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">
               {result.offers.map((offer) => (
                 <OfferCard key={offer.id} offer={offer} />
               ))}
@@ -322,7 +325,7 @@ export default async function OffersPage({
               {currentPage > 1 ? (
                 <Link
                   href={hrefWith(current, { page: String(currentPage - 1) })}
-                  className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                  className="inline-flex min-h-11 items-center rounded-xl border bg-white px-4 py-2 text-sm font-semibold"
                   rel="prev"
                 >
                   Trang trước
