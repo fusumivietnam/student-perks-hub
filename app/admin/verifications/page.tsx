@@ -206,7 +206,7 @@ export default async function AdminVerificationsPage({
             const StatusIcon = status.Icon;
 
             return (
-              <Card role="article" key={verification.id} className="gap-0">
+              <article key={verification.id}><Card className="gap-0">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -290,7 +290,7 @@ export default async function AdminVerificationsPage({
                     ) : null}
                   </div>
                 </div>
-              </Card>
+              </Card></article>
             );
           })
         ) : (

@@ -204,7 +204,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
             };
 
             return (
-              <Card role="article" key={submission.id} className="gap-0">
+              <article key={submission.id}><Card className="gap-0">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-500">{submission.provider}</p>
@@ -322,7 +322,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                     Draft linked: {linkedOffer.slug}
                   </div>
                 ) : null}
-              </Card>
+              </Card></article>
             );
           })
         ) : (
