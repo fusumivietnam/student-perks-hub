@@ -89,7 +89,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
   const verifiedDate = formatVerifiedDate(offer.last_verified_at);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
       <Link
         href="/offers"
         className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
@@ -98,8 +98,9 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
         Tất cả ưu đãi
       </Link>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <article className="min-w-0 overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-sm">
+          <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-sky-50 p-6 sm:p-9">
           <div className="flex flex-wrap items-center gap-2">
             {offer.category ? (
               <Link
@@ -118,13 +119,15 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
           <p className="mt-6 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
             {offer.provider}
           </p>
-          <h1 className="mt-2 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl">
+          <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
             {offer.title}
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
             {offer.summary}
           </p>
 
+          </div>
+          <div className="px-6 pb-9 pt-1 sm:px-9">
           {offer.description ? (
             <section className="mt-10">
               <h2 className="text-2xl font-bold tracking-tight">Chi tiết</h2>
@@ -135,7 +138,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
           ) : null}
 
           {offer.eligibility ? (
-            <section className="mt-10 rounded-2xl border bg-slate-50 p-6">
+            <section className="mt-10 rounded-2xl border border-blue-100 bg-blue-50/50 p-6">
               <h2 className="flex items-center gap-2 text-xl font-bold">
                 <BadgeCheck className="size-5 text-primary" aria-hidden="true" />
                 Điều kiện
@@ -167,12 +170,13 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               ))}
             </div>
           ) : null}
+          </div>
         </article>
 
         <aside className="lg:pt-2">
-          <div className="sticky top-24 rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Quyền lợi</p>
-            <p className="mt-1 text-xl font-bold">
+          <div className="sticky top-24 rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-[0_18px_48px_-32px_rgba(30,64,175,0.4)]">
+            <p className="ui-eyebrow">Quyền lợi dành cho bạn</p>
+            <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">
               {offer.benefit_text?.trim() || benefitLabel(offer.benefit_type)}
             </p>
 
@@ -180,7 +184,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               href={offer.official_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white"
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Mở trang chính thức
               <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -202,7 +206,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
             ) : (
               <Link
                 href={`/login?next=${encodeURIComponent(`/offers/${offer.slug}`)}`}
-                className="mt-2 inline-flex w-full items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700"
+                className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Đăng nhập để lưu
               </Link>
