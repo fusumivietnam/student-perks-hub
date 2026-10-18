@@ -87,7 +87,9 @@ export async function reviewSubmission(formData: FormData) {
   if (!data) throw new Error("Submission was already reviewed or cancelled");
 
   revalidatePath("/admin");
+  revalidatePath("/admin/submissions");
   revalidatePath("/account");
+  revalidatePath("/account/submissions");
 }
 
 export async function createDraftFromSubmission(formData: FormData) {
