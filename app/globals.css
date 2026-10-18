@@ -57,3 +57,22 @@ body {
   font-weight: 600;
 }
 .skip-link:focus { transform: translateY(0); }
+
+/* Shared visual surfaces for public discovery and admin workspaces. */
+@layer components {
+  .ui-panel {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+  .ui-eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-blue-700;
+  }
+  .ui-section-title {
+    @apply text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl;
+  }
+  .ui-primary-action {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
