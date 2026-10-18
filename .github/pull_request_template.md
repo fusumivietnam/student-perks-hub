@@ -31,6 +31,11 @@ Describe database, security, recovery, deployment or rollback implications. Stat
 - [ ] CI fixes discovered before merge stay on this branch/PR.
 - [ ] Security, authorization, validation, accessibility, data integrity and recovery controls were not weakened for speed.
 
+## Shared UX/UI alignment (when modifying frontend or admin)
+- [ ] Compare desktop and 375px mobile views against docs/DESIGN_SYSTEM.md and approved mockup.
+- [ ] Use real data/capabilities only; preserve responsive, keyboard and empty/error behaviors.
+- [ ] Record intentional deviations from visual mockup.
+
 ## Admin UI alignment (when modifying /admin)
 - [ ] Matches docs/ADMIN_UI.md patterns and references the approved Admin UI mockup.
 - [ ] States loading, empty, error and success behaviors for the affected route.
