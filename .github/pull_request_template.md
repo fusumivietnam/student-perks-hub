@@ -31,6 +31,11 @@ Describe database, security, recovery, deployment or rollback implications. Stat
 - [ ] CI fixes discovered before merge stay on this branch/PR.
 - [ ] Security, authorization, validation, accessibility, data integrity and recovery controls were not weakened for speed.
 
+## Approved concept fidelity (UI changes)
+- [ ] Existing components and configuration reviewed; no unnecessary duplicate primitive.
+- [ ] Real Preview screenshots attached at 1440px and 375px, compared with docs/APPROVED_UI_CONCEPT.md.
+- [ ] Visual acceptance marked pending until screenshots have been reviewed; any deviations explained.
+
 ## Shared UX/UI alignment (when modifying frontend or admin)
 - [ ] Compare desktop and 375px mobile views against docs/DESIGN_SYSTEM.md and approved mockup.
 - [ ] Use real data/capabilities only; preserve responsive, keyboard and empty/error behaviors.
