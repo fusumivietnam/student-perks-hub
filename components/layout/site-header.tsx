@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Menu } from "lucide-react";
 
 import { signOut } from "@/app/login/actions";
 import { BrandLogo } from "@/components/brand-logo";
@@ -19,7 +20,19 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <BrandLogo />
+        <div className="flex min-w-0 items-center gap-3">
+          <details className="group relative md:hidden">
+            <summary aria-label="Mở menu điều hướng" className="flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border text-slate-700 [&::-webkit-details-marker]:hidden">
+              <Menu className="size-5" aria-hidden="true" />
+            </summary>
+            <nav aria-label="Điều hướng di động" className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-2 shadow-lg">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">{item.label}</Link>
+              ))}
+            </nav>
+          </details>
+          <BrandLogo />
+        </div>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex" aria-label="Điều hướng chính">
           {navItems.map((item) => (

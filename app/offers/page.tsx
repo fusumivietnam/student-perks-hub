@@ -212,6 +212,7 @@ export default async function OffersPage({
         <input
           type="search"
           name="q"
+          aria-label="Tìm kiếm ưu đãi"
           defaultValue={q}
           maxLength={80}
           placeholder="Tìm GitHub, Notion, Figma, Azure..."

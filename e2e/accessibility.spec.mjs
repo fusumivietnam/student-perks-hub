@@ -43,3 +43,25 @@ for (const [path, name] of criticalPublicPages) {
     ).toEqual([]);
   });
 }
+
+test("mobile navigation exposes the main destinations", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  const toggle = page.locator("summary[aria-label='Mở menu điều hướng']");
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  const nav = page.getByRole("navigation", { name: "Điều hướng di động" });
+  await expect(nav.getByRole("link", { name: "Tất cả ưu đãi" })).toBeVisible();
+  await nav.getByRole("link", { name: "Tất cả ưu đãi" }).click();
+  await expect(page).toHaveURL(/\/offers$/);
+});
+
+test("keyboard users can skip the header", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  const skip = page.getByRole("link", { name: "Chuyển đến nội dung chính" });
+  await expect(skip).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#main-content$/);
+  await expect(page.locator("#main-content")).toBeFocused();
+});

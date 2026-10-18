@@ -61,6 +61,7 @@ export default async function SearchPage({
         <input
           type="search"
           name="q"
+          aria-label="Tìm kiếm ưu đãi"
           defaultValue={q}
           required
           maxLength={80}
