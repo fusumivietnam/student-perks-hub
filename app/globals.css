@@ -76,3 +76,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+/* Admin is a separate application surface even though Next.js shares the root layout. */
+body:has([data-admin-shell]) [data-site-layout] > header,
+body:has([data-admin-shell]) [data-site-layout] > footer { display: none; }
+body:has([data-admin-shell]) [data-site-main] { min-height: 100vh; }
+body:has([data-admin-shell]) [data-admin-shell] main { max-width: none; }
