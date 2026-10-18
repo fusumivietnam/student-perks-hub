@@ -142,6 +142,7 @@ export async function saveCategory(formData: FormData) {
   if (error) throw new Error("Could not save category");
 
   revalidatePath("/admin");
+  revalidatePath("/admin/content/categories");
   revalidatePath("/categories");
   revalidatePath("/");
 }
