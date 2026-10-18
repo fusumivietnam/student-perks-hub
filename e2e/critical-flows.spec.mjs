@@ -214,7 +214,7 @@ test("admin can review a pending submission", async ({ page }) => {
   await page.goto("/admin/submissions");
 
   await expect(
-    page.getByRole("heading", { name: "Submission moderation" }),
+    page.getByRole("heading", { name: "Duyệt đề xuất" }),
   ).toBeVisible();
 
   const submission = page.locator("article").filter({ hasText: title });
