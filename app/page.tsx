@@ -72,7 +72,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="overflow-hidden border-b bg-gradient-to-br from-blue-50 via-white to-violet-50">
+      <section className="overflow-hidden border-b bg-gradient-to-br from-blue-100 via-white to-sky-50">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:py-24">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-sm font-medium text-primary">
@@ -80,8 +80,8 @@ export default async function HomePage() {
               Ưu đãi dành riêng cho sinh viên
             </div>
             <h1 className="max-w-3xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              Học nhiều hơn.{" "}
-              <span className="text-primary">Tiết kiệm nhiều hơn.</span>
+              Ưu đãi dành riêng{" "}
+              <span className="text-primary">cho sinh viên Việt Nam.</span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Khám phá phần mềm, AI, cloud, thiết kế và tài nguyên học tập có
@@ -103,43 +103,29 @@ export default async function HomePage() {
                 <input
                   id="home-search"
                   name="q"
-                  placeholder="Tìm GitHub, Notion, Figma, Azure..."
+                  placeholder="Tìm ưu đãi, thương hiệu, danh mục..."
                   className="w-full bg-transparent py-2 outline-none placeholder:text-slate-400"
                 />
               </div>
-              <button className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">
+              <button className="min-h-11 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">
                 Tìm kiếm
               </button>
             </form>
           </div>
 
-          <div className="relative hidden min-h-80 lg:block">
-            <div className="absolute inset-0 rounded-[2rem] border bg-white/70 shadow-sm" />
-            <div className="absolute inset-6 flex flex-col justify-between rounded-[1.5rem] bg-gradient-to-br from-primary to-violet-500 p-8 text-white">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
-                Student-first
-              </p>
-              <div>
-                <p className="text-3xl font-black">Tìm đúng ưu đãi.</p>
-                <p className="mt-2 text-white/80">
-                  Kiểm tra nguồn chính thức trước khi sử dụng.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-white/10 p-3">
-                  <strong className="block text-xl">Chính thức</strong>
-                  <span className="text-xs">nguồn ưu tiên</span>
-                </div>
-                <div className="rounded-xl bg-white/10 p-3">
-                  <strong className="block text-xl">{categories.length}</strong>
-                  <span className="text-xs">danh mục</span>
-                </div>
-                <div className="rounded-xl bg-white/10 p-3">
-                  <strong className="block text-xl">Thủ công</strong>
-                  <span className="text-xs">xác minh</span>
-                </div>
-              </div>
+          <div className="flex min-h-72 flex-col justify-between rounded-[2rem] border border-blue-200 bg-white/85 p-6 shadow-sm sm:p-8">
+            <div>
+              <p className="text-sm font-semibold text-primary">Khám phá theo nhu cầu</p>
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Công cụ tốt cho hành trình sinh viên</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Bắt đầu với danh mục phù hợp, so sánh quyền lợi và kiểm tra điều kiện từ nguồn chính thức.</p>
             </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {categories.slice(0, 4).map((category) => (
+                <CategoryCard key={category.id} category={category} />
+              ))}
+              {categories.length === 0 ? <p className="col-span-2 text-sm text-slate-500">Danh mục sẽ hiển thị khi có dữ liệu.</p> : null}
+            </div>
+            <Link href="/offers" className="mt-6 inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-primary px-5 py-2 font-semibold text-white">Khám phá tất cả ưu đãi <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </div>
         </div>
       </section>

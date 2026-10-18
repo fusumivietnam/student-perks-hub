@@ -1,6 +1,6 @@
 # Admin UI contract
 
-This document defines the **implementation contract** for the approved Student Perks Hub admin workspace mockup (six-screen concept approved in the project conversation, 18 October 2026). The mockup is a **visual direction, not evidence that sample counters, reports, uploads, or settings already exist**. GitHub PRs and Actions remain the live execution source of truth; do not copy CI or PR status here.
+This document extends [the shared design system](./DESIGN_SYSTEM.md) and defines the **implementation contract** for the approved Student Perks Hub admin workspace mockup (six-screen concept approved in the project conversation, 18 October 2026). The mockup is a **visual direction, not evidence that sample counters, reports, uploads, or settings already exist**. GitHub PRs and Actions remain the live execution source of truth; do not copy CI or PR status here.
 
 ## Principles
 
@@ -17,9 +17,9 @@ This document defines the **implementation contract** for the approved Student P
 | P0 | `/admin` | Exact core metrics, pending queue shortcuts | Existing implementation |
 | P0 | `/admin/submissions` | Review submitted offers with feedback and linked drafts | Existing implementation, refine UX |
 | P0 | `/admin/verifications` | Review student verification requests | Existing implementation, refine UX |
-| P0 | `/admin/content` | Existing category and offer editing | Transitional legacy forms; split into list/edit routes next |
+| P0 | `/admin/content` | Existing category editing and link to offers | Existing transitional category forms |
 | P1 | `/admin/freshness` | Review stale offers | Existing implementation |
-| P1 | `/admin/content/offers`, `/new`, `/[id]` | Search/filter offers, create/edit on dedicated pages | Planned, not implemented |
+| P0 | `/admin/content/offers`, `/new`, `/[id]` | Search/filter offers, create/edit on dedicated pages | Existing implementation |
 | P1 | `/admin/content/categories` | Manage categories in a focused list | Planned, not implemented |
 | P2 | Reports, settings, user management | Only after a supported real use case exists | Out of current scope |
 
