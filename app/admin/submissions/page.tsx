@@ -1,3 +1,7 @@
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, FileCheck2, FilePlus2 } from "lucide-react";
@@ -9,7 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Submission moderation",
+  title: "Duyệt đề xuất",
   robots: { index: false, follow: false },
 };
 
@@ -143,11 +147,11 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <main className="w-full px-4 py-10 sm:px-8 xl:px-10">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <p className="text-sm font-semibold text-primary">Administration</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">Submission moderation</h1>
+          <p className="text-sm font-semibold text-primary">Quản trị</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight">Duyệt đề xuất</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
             Xử lý hàng đợi theo trạng thái, giữ stale-state protection và chỉ chuyển một submission đã duyệt thành một draft offer có liên kết truy vết.
           </p>
@@ -182,9 +186,9 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
         {activeStatus !== "all" ? <input type="hidden" name="status" value={activeStatus} /> : null}
         <label className="grid min-w-48 flex-1 gap-1.5 text-sm font-semibold">
           Tìm đề xuất theo tên hoặc nhà cung cấp
-          <input name="q" defaultValue={keyword} maxLength={80} className="min-h-11 rounded-xl border px-3" />
+          <Input name="q" defaultValue={keyword} maxLength={80} />
         </label>
-        <button className="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white">Tìm kiếm</button>
+        <Button>Tìm kiếm</Button>
       </form>
       <p className="mt-3 text-xs text-slate-500" aria-live="polite">
         Hiển thị {submissions.length} / {counts[activeStatus]} đề xuất phù hợp{activeStatus === "all" ? "" : ` trong trạng thái “${statusConfig[activeStatus].label}”`}.
@@ -200,7 +204,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
             };
 
             return (
-              <article key={submission.id} className="rounded-2xl border bg-white p-5 shadow-sm">
+              <Card role="article" key={submission.id} className="gap-0">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-500">{submission.provider}</p>
@@ -211,13 +215,13 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                       rel="noopener noreferrer"
                       className="mt-2 inline-flex min-h-6 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
                     >
-                      Official link
+                      Liên kết chính thức
                       <ExternalLink className="size-3.5" aria-hidden="true" />
                     </a>
                   </div>
-                  <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${status.className}`}>
+                  <Badge variant={submission.status === "approved" ? "success" : submission.status === "pending" ? "warning" : submission.status === "rejected" ? "destructive" : "secondary"} className="w-fit">
                     {status.label}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t pt-4 text-xs text-slate-500">
@@ -237,7 +241,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
 
                 {submission.submitter_note ? (
                   <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-                    <span className="font-semibold text-slate-900">Submitter note: </span>
+                    <span className="font-semibold text-slate-900">Ghi chú người gửi: </span>
                     {submission.submitter_note}
                   </div>
                 ) : null}
@@ -276,7 +280,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
 
                 {submission.review_note ? (
                   <div className="mt-4 rounded-xl border p-3 text-sm text-slate-700">
-                    <span className="font-semibold">Review note: </span>
+                    <span className="font-semibold">Ghi chú duyệt: </span>
                     {submission.review_note}
                   </div>
                 ) : null}
@@ -318,7 +322,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                     Draft linked: {linkedOffer.slug}
                   </div>
                 ) : null}
-              </article>
+              </Card>
             );
           })
         ) : (

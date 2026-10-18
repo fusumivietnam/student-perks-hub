@@ -1,3 +1,7 @@
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -135,21 +139,21 @@ export default async function AdminVerificationsPage({
   const totalPages = Math.max(1, Math.ceil((total ?? 0)/20));
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <main className="w-full px-4 py-10 sm:px-8 xl:px-10">
       <Link
         href="/admin"
         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
-        Moderation console
+        Quản trị
       </Link>
 
       <div className="mt-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <p className="text-sm font-semibold text-primary">Administration</p>
+          <p className="text-sm font-semibold text-primary">Quản trị</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">Xác minh sinh viên</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Review dựa trên email tài khoản và tên tổ chức giáo dục do người dùng khai báo.
+            Xét duyệt dựa trên email tài khoản và tên tổ chức giáo dục do người dùng khai báo.
             MVP không lưu ảnh, giấy tờ hay mã số sinh viên.
           </p>
         </div>
@@ -183,9 +187,9 @@ export default async function AdminVerificationsPage({
       <form action="/admin/verifications" className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-4">
         {filter !== "all" ? <input type="hidden" name="status" value={filter} /> : null}
         <label className="grid min-w-48 flex-1 gap-1 text-sm font-semibold">Tìm trường hoặc email
-          <input name="q" defaultValue={keyword} maxLength={80} className="min-h-11 rounded-xl border px-3" />
+          <Input name="q" defaultValue={keyword} maxLength={80} />
         </label>
-        <button className="min-h-11 rounded-xl bg-primary px-5 font-semibold text-white">Tìm kiếm</button>
+        <Button>Tìm kiếm</Button>
       </form>
       <p className="mt-3 text-xs text-slate-500" aria-live="polite">
         Hiển thị {items.length} / {total ?? 0} yêu cầu phù hợp{filter === "all" ? "" : ` trong trạng thái “${statusCopy[filter].label}”`}.
@@ -202,22 +206,17 @@ export default async function AdminVerificationsPage({
             const StatusIcon = status.Icon;
 
             return (
-              <article
-                key={verification.id}
-                className="rounded-2xl border bg-white p-5 shadow-sm"
-              >
+              <Card role="article" key={verification.id} className="gap-0">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-bold text-slate-950">
                         {verification.institution_name}
                       </h2>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}
-                      >
+                      <Badge variant={resolvedStatus === "verified" ? "success" : resolvedStatus === "pending" ? "warning" : resolvedStatus === "rejected" ? "destructive" : "secondary"} className="gap-1">
                         <StatusIcon className="size-3.5" aria-hidden="true" />
                         {status.label}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="mt-2 break-all text-sm text-slate-600">
                       {verification.verification_email}
@@ -232,7 +231,7 @@ export default async function AdminVerificationsPage({
                       </span>
                       {verification.reviewed_at ? (
                         <span>
-                          Review: {new Intl.DateTimeFormat("vi-VN", {
+                          Duyệt: {new Intl.DateTimeFormat("vi-VN", {
                             dateStyle: "medium",
                             timeStyle: "short",
                           }).format(new Date(verification.reviewed_at))}
@@ -291,7 +290,7 @@ export default async function AdminVerificationsPage({
                     ) : null}
                   </div>
                 </div>
-              </article>
+              </Card>
             );
           })
         ) : (
