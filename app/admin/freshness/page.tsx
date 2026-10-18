@@ -8,6 +8,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { verifyOfferFreshness } from "@/app/admin/actions";
 import {
   classifyOfferFreshness,
@@ -17,7 +22,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Offer freshness",
+  title: "Độ mới ưu đãi",
   robots: { index: false, follow: false },
 };
 
@@ -113,12 +118,12 @@ export default async function AdminFreshnessPage() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <main className="w-full px-4 py-10 sm:px-8 xl:px-10">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="text-sm font-semibold text-primary">Data quality</p>
+          <p className="text-sm font-semibold text-primary">Chất lượng dữ liệu</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
-            Offer freshness queue
+            Theo dõi độ mới ưu đãi
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
             Ưu tiên các ưu đãi chưa xác minh, đã quá chu kỳ kiểm tra hoặc sắp
@@ -136,7 +141,7 @@ export default async function AdminFreshnessPage() {
 
       <section
         className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
-        aria-label="Freshness summary"
+        aria-label="Tổng quan độ mới ưu đãi"
       >
         <Summary
           label="Hết hạn"
@@ -172,21 +177,14 @@ export default async function AdminFreshnessPage() {
             const due = offerRecheckDueAt(offer);
 
             return (
-              <article
-                key={offer.id}
-                className="rounded-2xl border bg-white p-5 shadow-sm"
-              >
+              <article key={offer.id}><Card className="gap-0">
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${stateMeta.className}`}
-                      >
+                      <Badge variant={state === "fresh" ? "success" : state === "due-soon" ? "default" : state === "expired" ? "destructive" : "warning"}>
                         {stateMeta.label}
-                      </span>
-                      <span className="rounded-full border px-3 py-1 text-xs font-semibold text-slate-600">
-                        {offer.status}
-                      </span>
+                      </Badge>
+                      <Badge variant="secondary">{offer.status === "draft" ? "Bản nháp" : "Đã xuất bản"}</Badge>
                     </div>
                     <p className="mt-4 text-sm font-medium text-slate-500">
                       {offer.provider}
@@ -252,18 +250,18 @@ export default async function AdminFreshnessPage() {
                   className="mt-5 grid gap-3 border-t pt-5 md:grid-cols-4"
                 >
                   <input type="hidden" name="offerId" value={offer.id} />
-                  <input
+                  <Input
                     name="verificationNote"
                     placeholder="Ghi chú xác minh (tùy chọn)"
                     className="rounded-lg border px-3 py-2 text-sm md:col-span-2"
                   />
-                  <input
+                  <Input
                     name="expiresOn"
                     type="date"
                     aria-label="Ngày hết hạn"
                     className="rounded-lg border px-3 py-2 text-sm"
                   />
-                  <select
+                  <Select
                     name="verificationIntervalDays"
                     defaultValue={String(
                       offer.verification_interval_days || 90,
@@ -276,12 +274,12 @@ export default async function AdminFreshnessPage() {
                     <option value="90">90 ngày</option>
                     <option value="180">180 ngày</option>
                     <option value="365">365 ngày</option>
-                  </select>
-                  <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white md:col-span-4">
+                  </Select>
+                  <Button className="md:col-span-4">
                     Xác nhận nguồn chính thức vẫn hợp lệ
-                  </button>
+                  </Button>
                 </form>
-              </article>
+              </Card></article>
             );
           })
         ) : (
@@ -304,7 +302,7 @@ function Summary({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border bg-white p-4">
+    <Card className="gap-0 p-4">
       <div className="flex items-center justify-between text-slate-500">
         <p className="text-xs font-semibold uppercase tracking-wide">
           {label}
@@ -312,6 +310,6 @@ function Summary({
         {icon}
       </div>
       <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
-    </div>
+    </Card>
   );
 }
