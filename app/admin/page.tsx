@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, ClipboardCheck, FolderOpen, ShieldCheck, Tags } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { Card } from "@/components/ui/card";
 import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +33,7 @@ export default async function AdminPage() {
     <main className="w-full px-4 pb-16 pt-9 sm:px-8 xl:px-10">
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="ui-eyebrow">Admin workspace / Tổng quan</p>
+          <p className="ui-eyebrow">Không gian quản trị / Tổng quan</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Tổng quan quản trị</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Theo dõi dữ liệu hiện có và xử lý những tác vụ cần chú ý.</p>
         </div>
@@ -45,13 +46,15 @@ export default async function AdminPage() {
         </div>
         <div className="mt-4 grid gap-5 sm:grid-cols-2 2xl:grid-cols-4">
           {metrics.map((item) => (
-            <Link key={item.label} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-[border-color,box-shadow] hover:border-blue-300 hover:shadow-md">
+            <Link key={item.label} href={item.href} className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <Card className="h-full gap-0 p-6 transition-[border-color,box-shadow] group-hover:border-blue-300 group-hover:shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-600">{item.label}</p>
                 <span className="rounded-xl bg-blue-50 p-2.5 text-primary"><item.Icon className="size-5" aria-hidden="true" /></span>
               </div>
               <p className="mt-4 text-4xl font-black tabular-nums tracking-tight text-slate-950">{item.value}</p>
               <p className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary">{item.detail} <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" /></p>
+              </Card>
             </Link>
           ))}
         </div>
@@ -67,9 +70,11 @@ export default async function AdminPage() {
             { href: "/admin/freshness", label: "Kiểm tra độ mới", detail: "Rà soát điều kiện ưu đãi" },
             { href: "/admin/content", label: "Quản lý nội dung", detail: "Biên tập ưu đãi và danh mục" },
           ].map((task) => (
-            <Link key={task.href} href={task.href} className="group flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm">
+            <Link key={task.href} href={task.href} className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <Card className="min-h-24 flex-row items-center justify-between gap-4 transition group-hover:border-blue-200 group-hover:shadow-sm">
               <span><span className="block font-bold text-slate-950">{task.label}</span><span className="mt-1 block text-sm text-slate-500">{task.detail}</span></span>
               <ArrowUpRight className="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </Card>
             </Link>
           ))}
         </div>
