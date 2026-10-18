@@ -24,6 +24,8 @@ export const dynamic = "force-dynamic";
 type AdminVerificationsPageProps = {
   searchParams: Promise<{
     status?: string | string[];
+    q?: string | string[];
+    page?: string | string[];
   }>;
 };
 
@@ -89,6 +91,15 @@ export default async function AdminVerificationsPage({
   if (!admin) notFound();
 
   const filter = parseStatusFilter(one(params.status));
+  const keyword = (one(params.q) ?? "").trim().slice(0,80).replace(/[%,().]/g,"");
+  const page = Math.min(10000, Math.max(1, Number.parseInt(one(params.page) ?? "1",10) || 1));
+  const href = (status: StatusFilter, p = 1) => {
+    const qs = new URLSearchParams();
+    if(status !== "all") qs.set("status",status);
+    if(keyword) qs.set("q",keyword);
+    if(p > 1) qs.set("page",String(p));
+    return qs.size ? "/admin/verifications?" + qs.toString() : "/admin/verifications";
+  };
   const supabase = await createClient();
 
   let listQuery = supabase
@@ -97,25 +108,31 @@ export default async function AdminVerificationsPage({
       "id,user_id,verification_email,institution_name,status,created_at,reviewed_at,expires_at",
     )
     .order("created_at", { ascending: false })
-    .limit(100);
+    .order("id",{ascending:false}).range((page-1)*20,page*20-1);
 
   if (filter !== "all") {
     listQuery = listQuery.eq("status", filter);
   }
 
-  const [{ data: verifications, error }, { count: pendingCount, error: pendingError }] =
+  if(keyword) listQuery = listQuery.or("institution_name.ilike.%" + keyword + "%,verification_email.ilike.%" + keyword + "%");
+  let totalQuery = supabase.from("student_verifications").select("id",{count:"exact",head:true});
+  if(filter !== "all") totalQuery = totalQuery.eq("status",filter);
+  if(keyword) totalQuery = totalQuery.or("institution_name.ilike.%" + keyword + "%,verification_email.ilike.%" + keyword + "%");
+  const [{ data: verifications, error }, { count: pendingCount, error: pendingError }, { count: total, error: totalError }] =
     await Promise.all([
       listQuery,
       supabase
         .from("student_verifications")
         .select("id", { count: "exact", head: true })
         .eq("status", "pending"),
+      totalQuery,
     ]);
 
   if (error) throw new Error("Could not load student verifications");
-  if (pendingError) throw new Error("Could not load pending verification count");
+  if (pendingError || totalError) throw new Error("Could not load verification counts");
 
   const items = verifications ?? [];
+  const totalPages = Math.max(1, Math.ceil((total ?? 0)/20));
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -144,12 +161,12 @@ export default async function AdminVerificationsPage({
       <nav className="mt-6 flex flex-wrap gap-2" aria-label="Lọc yêu cầu xác minh">
         {filters.map((item) => {
           const active = filter === item.value;
-          const href = item.value === "all" ? "/admin/verifications" : `/admin/verifications?status=${item.value}`;
+          const link = href(item.value);
 
           return (
             <Link
               key={item.value}
-              href={href}
+              href={link}
               aria-current={active ? "page" : undefined}
               className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
                 active
@@ -163,8 +180,15 @@ export default async function AdminVerificationsPage({
         })}
       </nav>
 
+      <form action="/admin/verifications" className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-4">
+        {filter !== "all" ? <input type="hidden" name="status" value={filter} /> : null}
+        <label className="grid min-w-48 flex-1 gap-1 text-sm font-semibold">Tìm trường hoặc email
+          <input name="q" defaultValue={keyword} maxLength={80} className="min-h-11 rounded-xl border px-3" />
+        </label>
+        <button className="min-h-11 rounded-xl bg-primary px-5 font-semibold text-white">Tìm kiếm</button>
+      </form>
       <p className="mt-3 text-xs text-slate-500" aria-live="polite">
-        Hiển thị {items.length} yêu cầu gần nhất{filter === "all" ? "" : ` trong trạng thái “${statusCopy[filter].label}”`}.
+        Hiển thị {items.length} / {total ?? 0} yêu cầu phù hợp{filter === "all" ? "" : ` trong trạng thái “${statusCopy[filter].label}”`}.
       </p>
 
       <section className="mt-6 grid gap-4">
@@ -289,6 +313,11 @@ export default async function AdminVerificationsPage({
           </div>
         )}
       </section>
+      {totalPages > 1 ? <nav aria-label="Phân trang xác minh" className="mt-6 flex items-center justify-between">
+        {page > 1 ? <Link href={href(filter,page-1)} className="rounded-xl border bg-white px-4 py-3">← Trước</Link> : <span />}
+        <span>Trang {page} / {totalPages}</span>
+        {page < totalPages ? <Link href={href(filter,page+1)} className="rounded-xl border bg-white px-4 py-3">Sau →</Link> : <span />}
+      </nav> : null}
     </main>
   );
 }
