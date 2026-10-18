@@ -98,8 +98,8 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
         Tất cả ưu đãi
       </Link>
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <article>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-2">
             {offer.category ? (
               <Link
@@ -180,7 +180,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               href={offer.official_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white"
+              className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white"
             >
               Mở trang chính thức
               <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -195,7 +195,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
                   name="intent"
                   value={bookmarked ? "remove" : "save"}
                 />
-                <button className="w-full rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700">
+                <button className="min-h-11 w-full rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700">
                   {bookmarked ? "Bỏ lưu" : "Lưu ưu đãi"}
                 </button>
               </form>

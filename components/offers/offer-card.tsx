@@ -44,7 +44,7 @@ export function OfferCard({ offer }: OfferCardProps) {
   const providerSlug = brandSlug(offer.provider);
 
   return (
-    <article className="flex h-full flex-col rounded-2xl border bg-white p-5 shadow-sm">
+    <article className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-blue-200">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-slate-50 text-sm font-bold text-slate-700">
@@ -108,7 +108,7 @@ export function OfferCard({ offer }: OfferCardProps) {
       <div className="mt-5 border-t pt-4">
         <Link
           href={`/offers/${offer.slug}`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary hover:underline"
         >
           Xem ưu đãi
           <ArrowUpRight className="size-4" aria-hidden="true" />
