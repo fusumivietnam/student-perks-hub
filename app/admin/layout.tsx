@@ -5,7 +5,8 @@ import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
 
 const adminNav = [
-  { href: "/admin", label: "Tổng quan & nội dung" },
+  { href: "/admin", label: "Tổng quan" },
+  { href: "/admin/content", label: "Nội dung" },
   { href: "/admin/submissions", label: "Đề xuất" },
   { href: "/admin/verifications", label: "Xác minh sinh viên" },
   { href: "/admin/freshness", label: "Độ mới ưu đãi" },
