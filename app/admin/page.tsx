@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight, ClipboardCheck, FolderOpen, ShieldCheck, Tags } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
@@ -22,37 +23,55 @@ export default async function AdminPage() {
   ]);
   if ([offers, categories, submissions, verifications].some((item) => item.error)) throw new Error("Could not load admin dashboard");
   const metrics = [
-    { label: "Ưu đãi", value: offers.count ?? 0, href: "/admin/content", detail: "Quản lý danh sách" },
-    { label: "Danh mục", value: categories.count ?? 0, href: "/admin/content", detail: "Chỉnh sửa danh mục" },
-    { label: "Đề xuất chờ duyệt", value: submissions.count ?? 0, href: "/admin/submissions?status=pending", detail: "Xử lý hàng đợi" },
-    { label: "Xác minh chờ duyệt", value: verifications.count ?? 0, href: "/admin/verifications?status=pending", detail: "Duyệt yêu cầu" },
+    { label: "Ưu đãi", value: offers.count ?? 0, href: "/admin/content/offers", detail: "Xem danh sách", Icon: FolderOpen },
+    { label: "Danh mục", value: categories.count ?? 0, href: "/admin/content/categories", detail: "Quản lý danh mục", Icon: Tags },
+    { label: "Đề xuất chờ duyệt", value: submissions.count ?? 0, href: "/admin/submissions?status=pending", detail: "Duyệt đề xuất", Icon: ClipboardCheck },
+    { label: "Xác minh chờ duyệt", value: verifications.count ?? 0, href: "/admin/verifications?status=pending", detail: "Duyệt xác minh", Icon: ShieldCheck },
   ];
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="text-sm font-semibold text-primary">Administration</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">Moderation console</h1>
-          <p className="mt-3 text-sm text-slate-600">Tổng quan quản trị · {admin.email ?? "Tài khoản quản trị"}</p>
+    <main className="mx-auto max-w-7xl px-4 pb-16 pt-9 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="ui-eyebrow">Admin workspace / Tổng quan</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Tổng quan quản trị</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Theo dõi dữ liệu hiện có và xử lý những tác vụ cần chú ý.</p>
         </div>
-        <Link href="/admin/content" className="inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white">Quản lý nội dung →</Link>
-      </div>
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Chỉ số quản trị">
-        {metrics.map((item) => (
-          <Link key={item.label} href={item.href} className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md">
-            <p className="text-sm font-semibold text-slate-600">{item.label}</p>
-            <p className="mt-3 text-4xl font-black tabular-nums">{item.value}</p>
-            <p className="mt-4 text-sm font-semibold text-primary">{item.detail} →</p>
-          </Link>
-        ))}
+        <Link href="/admin/content/offers/new" className="ui-primary-action">Tạo ưu đãi mới <ArrowUpRight className="ml-2 size-4" aria-hidden="true" /></Link>
+      </header>
+      <section className="mt-9" aria-labelledby="admin-metrics-heading">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="admin-metrics-heading" className="text-xl font-bold tracking-tight text-slate-950">Chỉ số vận hành</h2>
+          <span className="text-xs font-medium text-slate-500">Dữ liệu hiện tại</span>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {metrics.map((item) => (
+            <Link key={item.label} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-[border-color,box-shadow] hover:border-blue-200 hover:shadow-md">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-semibold text-slate-600">{item.label}</p>
+                <span className="rounded-xl bg-blue-50 p-2.5 text-primary"><item.Icon className="size-5" aria-hidden="true" /></span>
+              </div>
+              <p className="mt-4 text-4xl font-black tabular-nums tracking-tight text-slate-950">{item.value}</p>
+              <p className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary">{item.detail} <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" /></p>
+            </Link>
+          ))}
+        </div>
       </section>
-      <section className="mt-10 rounded-2xl border bg-slate-50 p-6">
-        <h2 className="text-xl font-bold">Thao tác nhanh</h2>
-        <p className="mt-2 text-sm text-slate-600">Tập trung xử lý đề xuất, xác minh và kiểm tra độ mới trước khi chỉnh sửa nội dung.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <Link href="/admin/submissions?status=pending" className="rounded-xl border bg-white p-4 font-semibold hover:border-primary">Duyệt đề xuất →</Link>
-          <Link href="/admin/verifications?status=pending" className="rounded-xl border bg-white p-4 font-semibold hover:border-primary">Xác minh sinh viên →</Link>
-          <Link href="/admin/freshness" className="rounded-xl border bg-white p-4 font-semibold hover:border-primary">Kiểm tra độ mới →</Link>
-          <Link href="/admin/content" className="rounded-xl border bg-white p-4 font-semibold hover:border-primary">Biên tập nội dung →</Link>
+      <section className="mt-10 rounded-[1.75rem] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-sky-50 p-5 sm:p-7" aria-labelledby="admin-shortcuts-heading">
+        <p className="ui-eyebrow">Công việc tiếp theo</p>
+        <h2 id="admin-shortcuts-heading" className="mt-2 text-2xl font-bold tracking-tight text-slate-950">Thao tác nhanh</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Ưu tiên duyệt đề xuất, xác minh sinh viên và rà soát ưu đãi.</p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {[
+            { href: "/admin/submissions?status=pending", label: "Duyệt đề xuất", detail: "Kiểm tra nội dung do người dùng gửi" },
+            { href: "/admin/verifications?status=pending", label: "Xác minh sinh viên", detail: "Xử lý yêu cầu đang chờ" },
+            { href: "/admin/freshness", label: "Kiểm tra độ mới", detail: "Rà soát điều kiện ưu đãi" },
+            { href: "/admin/content", label: "Quản lý nội dung", detail: "Biên tập ưu đãi và danh mục" },
+          ].map((task) => (
+            <Link key={task.href} href={task.href} className="group flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm">
+              <span><span className="block font-bold text-slate-950">{task.label}</span><span className="mt-1 block text-sm text-slate-500">{task.detail}</span></span>
+              <ArrowUpRight className="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </Link>
+          ))}
         </div>
       </section>
     </main>
