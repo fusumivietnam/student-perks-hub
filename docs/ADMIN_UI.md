@@ -20,7 +20,7 @@ This document extends [the shared design system](./DESIGN_SYSTEM.md) and defines
 | P0 | `/admin/content` | Existing category editing and link to offers | Existing transitional category forms |
 | P1 | `/admin/freshness` | Review stale offers | Existing implementation |
 | P0 | `/admin/content/offers`, `/new`, `/[id]` | Search/filter offers, create/edit on dedicated pages | Existing implementation |
-| P1 | `/admin/content/categories` | Manage categories in a focused list | Planned, not implemented |
+| P1 | `/admin/content/categories` | Manage categories in a focused list | Implemented; no normal UI permanent delete |
 | P2 | Reports, settings, user management | Only after a supported real use case exists | Out of current scope |
 
 Do not create placeholder routes for planned features.
