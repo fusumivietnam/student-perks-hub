@@ -48,8 +48,9 @@ export default function RootLayout({
     <html lang="vi">
       <body className={inter.className}>
         <div className="flex min-h-screen flex-col">
+          <a href="#main-content" className="skip-link">Chuyển đến nội dung chính</a>
           <SiteHeader />
-          <main className="min-h-[calc(100svh-4rem)] flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="min-h-[calc(100svh-4rem)] flex-1">{children}</main>
           <SiteFooter />
         </div>
       </body>
