@@ -207,7 +207,7 @@ export default async function OffersPage({
 
       <form
         action="/offers"
-        className="mt-8 flex gap-2 rounded-2xl border bg-white p-2 shadow-sm"
+        className="mt-8 flex gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-sm"
       >
         <input
           type="search"
@@ -222,7 +222,7 @@ export default async function OffersPage({
         {benefit ? <input type="hidden" name="benefit" value={benefit} /> : null}
         {audience ? <input type="hidden" name="audience" value={audience} /> : null}
         {sort !== "recent" ? <input type="hidden" name="sort" value={sort} /> : null}
-        <button className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">
+        <button className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">
           Tìm
         </button>
       </form>
@@ -234,7 +234,7 @@ export default async function OffersPage({
               key={item.id}
               href={hrefWith(current, { category: item.slug, page: null })}
               aria-current={category === item.slug ? "page" : undefined}
-              className="rounded-full border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:bg-blue-50 aria-[current=page]:text-primary"
+              className="inline-flex min-h-11 items-center rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:bg-blue-50 aria-[current=page]:text-primary"
             >
               {item.name}
             </Link>
