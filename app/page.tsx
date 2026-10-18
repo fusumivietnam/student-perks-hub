@@ -26,7 +26,7 @@ function OfferSection({
   offers,
 }: OfferSectionProps) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-primary">{eyebrow}</p>
@@ -73,13 +73,13 @@ export default async function HomePage() {
   return (
     <>
       <section className="overflow-hidden border-b bg-gradient-to-br from-blue-100 via-white to-sky-50">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_.9fr] lg:px-8 lg:py-24">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-sm font-medium text-primary">
               <Sparkles className="size-4" aria-hidden="true" />
               Ưu đãi dành riêng cho sinh viên
             </div>
-            <h1 className="max-w-3xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.12] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
               Ưu đãi dành riêng{" "}
               <span className="text-primary">cho sinh viên Việt Nam.</span>
             </h1>
@@ -90,7 +90,7 @@ export default async function HomePage() {
 
             <form
               action="/offers"
-              className="mt-8 flex max-w-2xl gap-2 rounded-2xl border bg-white p-2 shadow-sm"
+              className="mt-8 flex max-w-2xl flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(30,64,175,0.35)] sm:flex-nowrap"
             >
               <label htmlFor="home-search" className="sr-only">
                 Tìm ưu đãi
@@ -107,30 +107,30 @@ export default async function HomePage() {
                   className="w-full bg-transparent py-2 outline-none placeholder:text-slate-400"
                 />
               </div>
-              <button className="min-h-11 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">
+              <button className="min-h-11 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto">
                 Tìm kiếm
               </button>
             </form>
           </div>
 
-          <div className="flex min-h-72 flex-col justify-between rounded-[2rem] border border-blue-200 bg-white/85 p-6 shadow-sm sm:p-8">
+          <div className="flex min-h-72 flex-col justify-between rounded-[2rem] border border-blue-100 bg-white/95 p-6 shadow-[0_22px_80px_-38px_rgba(37,99,235,0.45)] sm:p-8">
             <div>
               <p className="text-sm font-semibold text-primary">Khám phá theo nhu cầu</p>
               <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Công cụ tốt cho hành trình sinh viên</h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">Bắt đầu với danh mục phù hợp, so sánh quyền lợi và kiểm tra điều kiện từ nguồn chính thức.</p>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {categories.slice(0, 4).map((category) => (
                 <CategoryCard key={category.id} category={category} />
               ))}
               {categories.length === 0 ? <p className="col-span-2 text-sm text-slate-500">Danh mục sẽ hiển thị khi có dữ liệu.</p> : null}
             </div>
-            <Link href="/offers" className="mt-6 inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-primary px-5 py-2 font-semibold text-white">Khám phá tất cả ưu đãi <ArrowRight className="size-4" aria-hidden="true" /></Link>
+            <Link href="/offers" className="mt-6 inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-primary px-5 py-2 font-semibold text-white transition hover:bg-blue-700">Khám phá tất cả ưu đãi <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-primary">Khám phá</p>
