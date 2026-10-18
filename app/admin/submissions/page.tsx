@@ -26,7 +26,7 @@ type SubmissionStatus = keyof typeof statusConfig;
 type StatusFilter = "all" | SubmissionStatus;
 
 type AdminSubmissionsPageProps = {
-  searchParams: Promise<{ status?: string | string[] }>;
+  searchParams: Promise<{ status?: string | string[]; q?: string | string[]; page?: string | string[] }>;
 };
 
 const filters: Array<{ value: StatusFilter; label: string }> = [
@@ -58,6 +58,16 @@ function slugSuggestion(provider: string, title: string) {
 export default async function AdminSubmissionsPage({ searchParams }: AdminSubmissionsPageProps) {
   const params = await searchParams;
   const activeStatus = parseStatus(one(params.status));
+  const keyword = (one(params.q) ?? "").trim().slice(0, 80).replace(/[%,().]/g, "");
+  const page = Math.min(10000, Math.max(1, Number.parseInt(one(params.page) ?? "1", 10) || 1));
+  const pageSize = 20;
+  const pageHref = (p: number, status: StatusFilter = activeStatus) => {
+    const query = new URLSearchParams();
+    if (status !== "all") query.set("status", status);
+    if (keyword) query.set("q", keyword);
+    if (p > 1) query.set("page", String(p));
+    return query.size ? `/admin/submissions?${query}` : "/admin/submissions";
+  };
   const supabase = await createClient();
 
   let submissionsQuery = supabase
@@ -66,15 +76,17 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
       "id,provider,title,official_url,description,submitter_note,status,review_note,reviewed_at,created_at",
     )
     .order("created_at", { ascending: false })
-    .limit(100);
+    .order("id", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
 
   if (activeStatus !== "all") {
     submissionsQuery = submissionsQuery.eq("status", activeStatus);
   }
 
+  if (keyword) submissionsQuery = submissionsQuery.or(`title.ilike.%${keyword}%,provider.ilike.%${keyword}%`);
   const countQuery = (status?: SubmissionStatus) => {
     let query = supabase.from("submissions").select("id", { count: "exact", head: true });
     if (status) query = query.eq("status", status);
+    if (keyword) query = query.or(`title.ilike.%${keyword}%,provider.ilike.%${keyword}%`);
     return query;
   };
 
@@ -123,6 +135,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
   };
 
   const submissions = submissionsResult.data ?? [];
+  const totalPages = Math.max(1, Math.ceil(counts[activeStatus] / pageSize));
   const offersBySubmission = new Map(
     (offersResult.data ?? [])
       .filter((offer) => offer.source_submission_id)
@@ -147,7 +160,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
       <nav className="mt-6 flex flex-wrap gap-2" aria-label="Lọc submission theo trạng thái">
         {filters.map((filter) => {
           const active = filter.value === activeStatus;
-          const href = filter.value === "all" ? "/admin/submissions" : `/admin/submissions?status=${filter.value}`;
+          const href = pageHref(1, filter.value);
           return (
             <Link
               key={filter.value}
@@ -165,8 +178,16 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
         })}
       </nav>
 
+      <form action="/admin/submissions" className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-4">
+        {activeStatus !== "all" ? <input type="hidden" name="status" value={activeStatus} /> : null}
+        <label className="grid min-w-48 flex-1 gap-1.5 text-sm font-semibold">
+          Tìm đề xuất theo tên hoặc nhà cung cấp
+          <input name="q" defaultValue={keyword} maxLength={80} className="min-h-11 rounded-xl border px-3" />
+        </label>
+        <button className="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white">Tìm kiếm</button>
+      </form>
       <p className="mt-3 text-xs text-slate-500" aria-live="polite">
-        Hiển thị {submissions.length} submission gần nhất{activeStatus === "all" ? "" : ` trong trạng thái “${statusConfig[activeStatus].label}”`}.
+        Hiển thị {submissions.length} / {counts[activeStatus]} đề xuất phù hợp{activeStatus === "all" ? "" : ` trong trạng thái “${statusConfig[activeStatus].label}”`}.
       </p>
 
       <div className="mt-6 grid gap-4">
@@ -313,6 +334,11 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
           </div>
         )}
       </div>
+      {totalPages > 1 ? <nav aria-label="Phân trang đề xuất" className="mt-6 flex items-center justify-between gap-4">
+        {page > 1 ? <Link href={pageHref(page - 1)} className="rounded-xl border bg-white px-4 py-3">← Trước</Link> : <span />}
+        <span>Trang {page} / {totalPages}</span>
+        {page < totalPages ? <Link href={pageHref(page + 1)} className="rounded-xl border bg-white px-4 py-3">Sau →</Link> : <span />}
+      </nav> : null}
     </main>
   );
 }
