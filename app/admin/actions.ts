@@ -187,10 +187,10 @@ export async function saveOffer(formData: FormData) {
     category_id: parsed.data.categoryId ?? null,
     benefit_type: parsed.data.benefitType,
     benefit_text: parsed.data.benefitText ?? null,
-    status: parsed.data.status,
+    status: parsed.data.id ? parsed.data.status : "draft",
     is_featured: parsed.data.featured,
     published_at:
-      parsed.data.status === "published" ? new Date().toISOString() : null,
+      (parsed.data.id && parsed.data.status === "published") ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   };
 
@@ -203,6 +203,7 @@ export async function saveOffer(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/admin/freshness");
+  revalidatePath("/admin/content/offers");
   revalidatePath("/offers");
   revalidatePath("/");
   revalidatePath("/offers/" + parsed.data.slug);
@@ -240,16 +241,20 @@ export async function verifyOfferFreshness(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function deleteOffer(formData: FormData) {
+export async function archiveOffer(formData: FormData) {
   await requireAdmin();
   const id = idSchema.parse(formData.get("id"));
-
   const supabase = await createClient();
-  const { error } = await supabase.from("offers").delete().eq("id", id);
-  if (error) throw new Error("Could not delete offer");
-
+  const { data, error } = await supabase.from("offers")
+    .update({ status: "archived", is_featured: false, published_at: null, updated_at: new Date().toISOString() })
+    .eq("id", id).neq("status", "archived").select("slug").maybeSingle();
+  if (error) throw new Error("Could not archive offer");
+  if (!data) throw new Error("Offer not found or already archived");
   revalidatePath("/admin");
+  revalidatePath("/admin/content/offers");
+  revalidatePath("/admin/content/offers/" + id);
   revalidatePath("/admin/freshness");
   revalidatePath("/offers");
+  revalidatePath("/offers/" + data.slug);
   revalidatePath("/");
 }

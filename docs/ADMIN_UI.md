@@ -43,3 +43,9 @@ For every touched screen: explicit loading/empty/error/success behavior; test ke
 ## Scope discipline
 
 The concept shows illustrative analytics, report charts, user management, image uploads and settings. These are **deferred**: implement only when there is a concrete operational requirement and a verified data source. No mock or invented production metrics.
+
+## Approved operational policies (18 October 2026)
+
+- New offers are saved as `draft` regardless of the submitted status. Publishing requires a separate, intentional edit by an authorized administrator.
+- Routine removal is **archive**, not permanent deletion. Archiving clears featured status and makes published offers unavailable to public discovery through existing publication filters.
+- Permanent delete is not offered in the normal Admin UI. Exceptional irreversible deletion requires a separate reviewed procedure and explicit human authorization.
