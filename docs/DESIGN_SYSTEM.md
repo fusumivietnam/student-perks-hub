@@ -1,6 +1,6 @@
 # Student Perks Hub — shared UX/UI contract
 
-Approved direction: reproduce the **structure, visual hierarchy, spacing and blue/white language** of the 18 October 2026 nine-screen mockup across Public Frontend and Admin. Adapt every screen to actual data, real capabilities and existing routes; the illustration is not a source for synthetic charts, logos, testimonials, savings percentages or analytics.
+**Canonical visual reference:** [Approved shadcn/ui concept](./APPROVED_UI_CONCEPT.md). This reference takes precedence over earlier mockups.\n\nApproved direction: reproduce the **structure, visual hierarchy, spacing and blue/white language** of the 18 October 2026 nine-screen mockup across Public Frontend and Admin. Adapt every screen to actual data, real capabilities and existing routes; the illustration is not a source for synthetic charts, logos, testimonials, savings percentages or analytics.
 
 ## Design tokens and patterns
 

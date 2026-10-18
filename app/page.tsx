@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 
+import { uiConfig } from "@/lib/ui-config";
 import { CategoryCard } from "@/components/categories/category-card";
 import { OfferCard, type OfferCardOffer } from "@/components/offers/offer-card";
 import { getCategories } from "@/lib/queries/categories";
@@ -103,7 +104,7 @@ export default async function HomePage() {
                 <input
                   id="home-search"
                   name="q"
-                  placeholder="Tìm ưu đãi, thương hiệu, danh mục..."
+                  placeholder={uiConfig.public.searchPlaceholder}
                   className="w-full bg-transparent py-2 outline-none placeholder:text-slate-400"
                 />
               </div>
