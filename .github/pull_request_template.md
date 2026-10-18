@@ -31,6 +31,12 @@ Describe database, security, recovery, deployment or rollback implications. Stat
 - [ ] CI fixes discovered before merge stay on this branch/PR.
 - [ ] Security, authorization, validation, accessibility, data integrity and recovery controls were not weakened for speed.
 
+## Admin UI alignment (when modifying /admin)
+- [ ] Matches docs/ADMIN_UI.md patterns and references the approved Admin UI mockup.
+- [ ] States loading, empty, error and success behaviors for the affected route.
+- [ ] Checks mobile layout, keyboard access, form labels and status semantics.
+- [ ] Keeps existing admin/RLS authorization and moderation state transitions unchanged unless explicitly reviewed.
+
 ## Release impact
 
 - [ ] No Production release required
