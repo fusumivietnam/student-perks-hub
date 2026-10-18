@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { brandSlug } from "@/lib/brands";
 import type { Database } from "@/lib/database.types";
 
@@ -44,7 +46,7 @@ export function OfferCard({ offer }: OfferCardProps) {
   const providerSlug = brandSlug(offer.provider);
 
   return (
-    <article className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
+    <Card role="article" className="group h-full gap-0 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-slate-50 text-sm font-bold text-slate-700">
@@ -86,9 +88,9 @@ export function OfferCard({ offer }: OfferCardProps) {
           </div>
         </div>
 
-        <span className="max-w-[45%] shrink-0 break-words rounded-full bg-blue-50 px-2.5 py-1 text-right text-xs font-semibold text-primary">
+        <Badge className="max-w-[45%] shrink-0 break-words text-right">
           {offer.benefit_text?.trim() || benefitLabel(offer.benefit_type)}
-        </span>
+        </Badge>
       </div>
 
       <div className="mt-5 flex-1">
@@ -114,6 +116,6 @@ export function OfferCard({ offer }: OfferCardProps) {
           <ArrowUpRight className="size-4" aria-hidden="true" />
         </Link>
       </div>
-    </article>
+    </Card>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { Card } from "@/components/ui/card";
 import type { Database } from "@/lib/database.types";
 
 type Category = Database["public"]["Tables"]["categories"]["Row"];
@@ -13,8 +14,9 @@ export function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/offers?category=${encodeURIComponent(category.slug)}`}
-      className="group block min-h-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="group block min-h-28 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
+      <Card className="h-full gap-0 transition-[border-color,box-shadow,transform] group-hover:-translate-y-0.5 group-hover:border-blue-200 group-hover:shadow-lg">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold text-slate-950">{category.name}</h3>
@@ -27,6 +29,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
           aria-hidden="true"
         />
       </div>
+      </Card>
     </Link>
   );
 }
