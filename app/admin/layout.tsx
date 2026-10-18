@@ -1,17 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardList, FileText, Gauge, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { AdminNavigation } from "@/components/admin/admin-navigation";
 import { notFound, redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentAuth } from "@/lib/auth";
-
-const adminNav = [
-  { href: "/admin", label: "Tổng quan", icon: Gauge },
-  { href: "/admin/content", label: "Nội dung", icon: FileText },
-  { href: "/admin/submissions", label: "Đề xuất", icon: ClipboardList },
-  { href: "/admin/verifications", label: "Xác minh sinh viên", icon: ShieldCheck },
-  { href: "/admin/freshness", label: "Độ mới ưu đãi", icon: Sparkles },
-];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const auth = await getCurrentAuth();
@@ -28,18 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="mt-2 text-xl font-bold text-white">Admin Workspace</p>
           <p className="mt-1 text-xs text-slate-400">Vận hành và quản lý nội dung</p>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 py-3 lg:sticky lg:top-0 lg:flex-col lg:overflow-visible lg:py-5" aria-label="Điều hướng quản trị">
-          {adminNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="inline-flex min-h-11 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-blue-300"
-            >
-              <item.icon className="size-4 shrink-0" aria-hidden="true" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <AdminNavigation />
       </aside>
       <div className="min-w-0">
         <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-8">

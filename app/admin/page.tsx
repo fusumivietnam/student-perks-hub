@@ -29,7 +29,7 @@ export default async function AdminPage() {
     { label: "Xác minh chờ duyệt", value: verifications.count ?? 0, href: "/admin/verifications?status=pending", detail: "Duyệt xác minh", Icon: ShieldCheck },
   ];
   return (
-    <main className="mx-auto max-w-7xl px-4 pb-16 pt-9 sm:px-6 lg:px-8">
+    <main className="w-full px-4 pb-16 pt-9 sm:px-8 xl:px-10">
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
           <p className="ui-eyebrow">Admin workspace / Tổng quan</p>
@@ -43,9 +43,9 @@ export default async function AdminPage() {
           <h2 id="admin-metrics-heading" className="text-xl font-bold tracking-tight text-slate-950">Chỉ số vận hành</h2>
           <span className="text-xs font-medium text-slate-500">Dữ liệu hiện tại</span>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid gap-5 sm:grid-cols-2 2xl:grid-cols-4">
           {metrics.map((item) => (
-            <Link key={item.label} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-[border-color,box-shadow] hover:border-blue-200 hover:shadow-md">
+            <Link key={item.label} href={item.href} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-[border-color,box-shadow] hover:border-blue-300 hover:shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-600">{item.label}</p>
                 <span className="rounded-xl bg-blue-50 p-2.5 text-primary"><item.Icon className="size-5" aria-hidden="true" /></span>
