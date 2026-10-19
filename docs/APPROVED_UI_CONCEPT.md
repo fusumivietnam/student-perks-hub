@@ -18,3 +18,9 @@ Implement screens only with existing fields/workflows. Status badges must reflec
 
 ## Migration strategy
 Foundation and configuration first, then migrate existing high-reuse components and one screen at a time. Avoid a separate UI library or wholesale rewrite. No feature changes hidden in visual-only PRs.
+
+## Reproducible visual evidence (not automatic acceptance)
+
+The Playwright suite `e2e/visual-audit.spec.mjs` captures 9 routes at 1440px and 375px against deterministic local seed data. GitHub CI stores screenshots as the `visual-audit-<run_id>` artifact for 14 days. The test also fails on unexpected horizontal page overflow.
+
+**Critical distinction:** these CI screenshots are local test-app evidence, not authenticated Vercel Preview screenshots. They are not pixel-diffs against the approved image and do not prove concept fidelity. A reviewer must compare with the original approved image and inspect authenticated Preview before recording visual acceptance. Never add dummy content or weaken auth to make screenshots look complete.
