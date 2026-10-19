@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { OfferCard } from "@/components/offers/offer-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { getCategories } from "@/lib/queries/categories";
 import { getOfferDiscovery } from "@/lib/queries/offer-discovery";
 
@@ -125,10 +129,10 @@ export default async function OffersPage({
     <div className="grid gap-4">
       <label className="grid gap-1.5 text-sm font-medium">
         Danh mục
-        <select
+        <Select
           name="category"
           defaultValue={category}
-          className="rounded-xl border bg-white px-3 py-2.5"
+          className="w-full"
         >
           <option value="">Tất cả danh mục</option>
           {categories.map((item) => (
@@ -136,15 +140,15 @@ export default async function OffersPage({
               {item.name}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
 
       <label className="grid gap-1.5 text-sm font-medium">
         Loại quyền lợi
-        <select
+        <Select
           name="benefit"
           defaultValue={benefit}
-          className="rounded-xl border bg-white px-3 py-2.5"
+          className="w-full"
         >
           <option value="">Tất cả</option>
           <option value="free">Miễn phí</option>
@@ -152,39 +156,39 @@ export default async function OffersPage({
           <option value="credit">Credit</option>
           <option value="trial">Dùng thử</option>
           <option value="other">Khác</option>
-        </select>
+        </Select>
       </label>
 
       <label className="grid gap-1.5 text-sm font-medium">
         Đối tượng
-        <select
+        <Select
           name="audience"
           defaultValue={audience}
-          className="rounded-xl border bg-white px-3 py-2.5"
+          className="w-full"
         >
           <option value="">Tất cả</option>
           <option value="student">Sinh viên</option>
           <option value="teacher">Giáo viên</option>
-        </select>
+        </Select>
       </label>
 
       <label className="grid gap-1.5 text-sm font-medium">
         Sắp xếp
-        <select
+        <Select
           name="sort"
           defaultValue={sort}
-          className="rounded-xl border bg-white px-3 py-2.5"
+          className="w-full"
         >
           <option value="recent">Mới cập nhật</option>
           <option value="popular">Phổ biến</option>
           <option value="title">Tên A–Z</option>
-        </select>
+        </Select>
       </label>
 
       <div className="flex gap-2">
-        <button className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white">
+        <Button>
           Áp dụng
-        </button>
+        </Button>
         <Link
           href="/offers"
           className="rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700"
@@ -210,22 +214,22 @@ export default async function OffersPage({
         action="/offers"
         className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:flex-nowrap"
       >
-        <input
+        <Input
           type="search"
           name="q"
           aria-label="Tìm kiếm ưu đãi"
           defaultValue={q}
           maxLength={80}
           placeholder="Tìm GitHub, Notion, Figma, Azure..."
-          className="min-h-11 min-w-0 flex-1 basis-full rounded-xl px-3 py-2 outline-none sm:basis-auto"
+          className="min-w-0 flex-1 basis-full border-0 shadow-none sm:basis-auto"
         />
         {category ? <input type="hidden" name="category" value={category} /> : null}
         {benefit ? <input type="hidden" name="benefit" value={benefit} /> : null}
         {audience ? <input type="hidden" name="audience" value={audience} /> : null}
         {sort !== "recent" ? <input type="hidden" name="sort" value={sort} /> : null}
-        <button className="min-h-11 w-full rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto">
+        <Button className="w-full sm:w-auto">
           Tìm
-        </button>
+        </Button>
       </form>
 
       </div>
@@ -268,10 +272,10 @@ export default async function OffersPage({
 
       <div className="mt-8 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
         <aside className="hidden lg:block">
-          <form action="/offers" className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Card className="sticky top-24 gap-0"><form action="/offers">
             {q ? <input type="hidden" name="q" value={q} /> : null}
             {filterFields}
-          </form>
+          </form></Card>
         </aside>
 
         <div>
