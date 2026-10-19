@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { OfferCard } from "@/components/offers/offer-card";
 import { getOfferDiscovery } from "@/lib/queries/offer-discovery";
 
@@ -58,7 +60,7 @@ export default async function SearchPage({
       </p>
 
       <form action="/search" className="mt-8 flex gap-2 rounded-2xl border bg-white p-2 shadow-sm">
-        <input
+        <Input
           type="search"
           name="q"
           aria-label="Tìm kiếm ưu đãi"
@@ -66,11 +68,11 @@ export default async function SearchPage({
           required
           maxLength={80}
           placeholder="GitHub, Notion, Figma, Azure..."
-          className="min-w-0 flex-1 rounded-xl px-3 py-2 outline-none"
+          className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
         />
-        <button className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">
+        <Button>
           Tìm
-        </button>
+        </Button>
       </form>
 
       {!q ? (

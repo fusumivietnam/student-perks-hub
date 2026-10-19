@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
         <div className="mt-8 rounded-2xl border border-dashed bg-slate-50 p-8 text-center">
           <p className="font-semibold">Chưa có danh mục nào.</p>
           <p className="mt-1 text-sm text-slate-500">
-            Hãy chạy seed local hoặc thêm danh mục trước khi tiếp tục.
+            Danh mục sẽ xuất hiện khi có nội dung được cập nhật.
           </p>
         </div>
       ) : (
