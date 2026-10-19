@@ -36,7 +36,7 @@ test("approved nine-screen visual audit evidence at desktop and mobile", async (
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Mật khẩu").fill(password);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
-  await expect(page).not.toHaveURL(/\\/login(?:\\?|$)/);
+  await expect.poll(() => new URL(page.url()).pathname).not.toBe("/login");
 
   for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: 900 });
