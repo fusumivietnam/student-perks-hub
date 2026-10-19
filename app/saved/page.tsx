@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { updateBookmark } from "@/app/saved/actions";
+import { Button } from "@/components/ui/button";
 import { OfferCard } from "@/components/offers/offer-card";
 import { getCurrentAuth } from "@/lib/auth";
 import { getSavedOffers } from "@/lib/queries/bookmarks";
@@ -73,9 +74,9 @@ export default async function SavedPage() {
                 <input type="hidden" name="offerId" value={offer.id} />
                 <input type="hidden" name="slug" value={offer.slug} />
                 <input type="hidden" name="intent" value="remove" />
-                <button className="min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                <Button variant="outline" className="w-full hover:border-red-200 hover:bg-red-50 hover:text-red-700">
                   Bỏ khỏi danh sách đã lưu
-                </button>
+                </Button>
               </form>
             </div>
           ))}
