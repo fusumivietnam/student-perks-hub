@@ -5,6 +5,9 @@ import { ArrowLeft, ArrowUpRight, BadgeCheck, CalendarDays } from "lucide-react"
 
 import { updateBookmark } from "@/app/saved/actions";
 import { OfferCard } from "@/components/offers/offer-card";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getCurrentAuth } from "@/lib/auth";
 import { isOfferBookmarked } from "@/lib/queries/bookmarks";
 import { getOfferBySlug, getRelatedOffers } from "@/lib/queries/offers";
@@ -111,9 +114,9 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               </Link>
             ) : null}
 
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-primary">
+            <Badge>
               {offer.benefit_text?.trim() || benefitLabel(offer.benefit_type)}
-            </span>
+            </Badge>
           </div>
 
           <p className="mt-6 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -174,7 +177,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
         </article>
 
         <aside className="lg:pt-2">
-          <div className="sticky top-24 rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-[0_18px_48px_-32px_rgba(30,64,175,0.4)]">
+          <Card className="sticky top-24 gap-0 border-blue-100 p-6 shadow-[0_18px_48px_-32px_rgba(30,64,175,0.4)]">
             <p className="ui-eyebrow">Quyền lợi dành cho bạn</p>
             <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">
               {offer.benefit_text?.trim() || benefitLabel(offer.benefit_type)}
@@ -199,9 +202,9 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
                   name="intent"
                   value={bookmarked ? "remove" : "save"}
                 />
-                <button className="min-h-11 w-full rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700">
+                <Button variant="outline" className="w-full">
                   {bookmarked ? "Bỏ lưu" : "Lưu ưu đãi"}
-                </button>
+                </Button>
               </form>
             ) : (
               <Link
@@ -223,7 +226,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
               Điều kiện có thể thay đổi. Luôn kiểm tra lại trên trang chính thức
               trước khi đăng ký.
             </p>
-          </div>
+          </Card>
         </aside>
       </div>
 

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { uiConfig } from "@/lib/ui-config";
 import { CategoryCard } from "@/components/categories/category-card";
 import { OfferCard, type OfferCardOffer } from "@/components/offers/offer-card";
@@ -76,10 +80,10 @@ export default async function HomePage() {
       <section className="overflow-hidden border-b bg-gradient-to-br from-blue-100 via-white to-sky-50">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_.9fr] lg:px-8 lg:py-24">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-sm font-medium text-primary">
+            <Badge variant="outline" className="mb-5 gap-2 px-3 py-1.5 text-sm text-primary">
               <Sparkles className="size-4" aria-hidden="true" />
               Ưu đãi dành riêng cho sinh viên
-            </div>
+            </Badge>
             <h1 className="max-w-3xl text-4xl font-black leading-[1.12] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
               Ưu đãi dành riêng{" "}
               <span className="text-primary">cho sinh viên Việt Nam.</span>
@@ -101,20 +105,20 @@ export default async function HomePage() {
                   className="size-5 shrink-0 text-slate-400"
                   aria-hidden="true"
                 />
-                <input
+                <Input
                   id="home-search"
                   name="q"
                   placeholder={uiConfig.public.searchPlaceholder}
-                  className="w-full bg-transparent py-2 outline-none placeholder:text-slate-400"
+                  className="w-full border-0 bg-transparent shadow-none focus-visible:ring-0"
                 />
               </div>
-              <button className="min-h-11 w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto">
+              <Button className="w-full sm:w-auto">
                 Tìm kiếm
-              </button>
+              </Button>
             </form>
           </div>
 
-          <div className="flex min-h-72 flex-col justify-between rounded-[2rem] border border-blue-100 bg-white/95 p-6 shadow-[0_22px_80px_-38px_rgba(37,99,235,0.45)] sm:p-8">
+          <Card className="min-h-72 justify-between border-blue-100 bg-white/95 p-6 shadow-[0_22px_80px_-38px_rgba(37,99,235,0.45)] sm:p-8">
             <div>
               <p className="text-sm font-semibold text-primary">Khám phá theo nhu cầu</p>
               <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Công cụ tốt cho hành trình sinh viên</h2>
@@ -126,8 +130,8 @@ export default async function HomePage() {
               ))}
               {categories.length === 0 ? <p className="col-span-2 text-sm text-slate-500">Danh mục sẽ hiển thị khi có dữ liệu.</p> : null}
             </div>
-            <Link href="/offers" className="mt-6 inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-primary px-5 py-2 font-semibold text-white transition hover:bg-blue-700">Khám phá tất cả ưu đãi <ArrowRight className="size-4" aria-hidden="true" /></Link>
-          </div>
+            <Link href="/offers" className="ui-primary-action mt-6 self-start">Khám phá tất cả ưu đãi <ArrowRight className="size-4" aria-hidden="true" /></Link>
+          </Card>
         </div>
       </section>
 
