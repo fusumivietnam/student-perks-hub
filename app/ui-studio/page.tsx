@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, BookOpen, CheckCircle2, ClipboardCheck, FolderOpen, LayoutDashboard, Search, ShieldCheck, Sparkles, Tags } from "lucide-react";
+import { BookOpen, CheckCircle2, ClipboardCheck, FolderOpen, LayoutDashboard, Search, ShieldCheck, Sparkles, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
