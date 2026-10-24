@@ -1,3 +1,5 @@
+> **Status update (24 October 2026):** This document is retained as historical acceptance criteria for the former nine-screen concept. The currently selected visual direction is **Concept F — Playful Modular**, defined in [CONCEPT_F_DESIGN_CONTRACT.md](CONCEPT_F_DESIGN_CONTRACT.md). The editable Figma file is a **working reference, not yet visually accepted**. Do not implement Concept F until its two calibration screens are signed off.
+
 # Approved UI concept — 19 October 2026
 
 The nine-screen **shadcn/ui-style concept** approved by the product owner supersedes the earlier blue/white collage for visual acceptance. Original image reference is in the approval conversation; when evaluating a PR, attach/reference the actual approved concept image, **not an approximate image search replacement**.
