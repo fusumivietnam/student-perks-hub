@@ -31,7 +31,14 @@ Describe database, security, recovery, deployment or rollback implications. Stat
 - [ ] CI fixes discovered before merge stay on this branch/PR.
 - [ ] Security, authorization, validation, accessibility, data integrity and recovery controls were not weakened for speed.
 
-## Approved concept fidelity (UI changes)
+## Concept F visual acceptance (UI changes)
+- [ ] Concept F calibration screens approved, or this PR is limited to design governance/testing with no visual migration.
+- [ ] Figma frame/node references and authenticated Preview URL listed.
+- [ ] Actual desktop 1440px and mobile 375px screenshots attached (CI local screenshots alone do not qualify).
+- [ ] Deviations, accessibility states, and explicit **VISUAL ACCEPTED / PENDING** decision recorded.
+- [ ] No unapproved UI feature or invented data introduced.
+
+## Legacy approved concept criteria (historical; superseded by Concept F once signed off)
 - [ ] Existing components and configuration reviewed; no unnecessary duplicate primitive.
 - [ ] Real Preview screenshots attached at 1440px and 375px, compared with docs/APPROVED_UI_CONCEPT.md.
 - [ ] Visual acceptance marked pending until screenshots have been reviewed; any deviations explained.
