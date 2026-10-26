@@ -14,3 +14,19 @@ Run the existing app locally with `pnpm dev`, then open **http://localhost:3000/
 - Design contract: [CONCEPT_F_DESIGN_CONTRACT.md](CONCEPT_F_DESIGN_CONTRACT.md)
 
 **Storybook decision:** deferred to avoid introducing a parallel component pipeline, extra dependencies and lockfile churn before calibrating the two key screens. This Studio is the lightest zero-dependency step; revisit Storybook once component variants and approved baselines justify it.
+
+## Visual calibration checklist
+
+Screenshots are evidence, **not** approval. In a local development session, capture `/ui-studio` in Chromium at 1440 × 900 and 375 × 812 (full-page). Keep screenshots attached to the review PR; **do not** commit opaque binary baselines until the visual owner accepts both calibrations.
+
+Check at each viewport:
+
+1. No horizontal overflow, clipped navigation, unreadable text or overlapping offer cards.
+2. Public section: heading hierarchy, hero CTA shape, search spacing, consistent offer-card anatomy, empty/loading states when actual routes are migrated.
+3. Admin section: sidebar and mobile navigation plan, four *unbound* metric slots (— means no data), queue layout, all labels legible without fake analytics.
+4. Verify focus-visible state, accessible labels, disabled demo actions and at least WCAG AA text contrast in final implementation.
+5. Record visual difference vs. Figma Concept F, decision **PENDING/ACCEPTED**, and reviewer. Only the `ACCEPTED` pair unlocks global token migration.
+
+### Production exposure regression
+
+`e2e/ui-studio.spec.mjs` exercises production-mode CI and requires `/ui-studio` to return 404 with no sample UI content. This security/surface test does not claim that the Studio's development layout has been visually verified. UI Studio visual calibration remains a manual development-mode task until a dedicated dev-mode capture job is separately reviewed.
