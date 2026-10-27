@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/validate-managed-state-evidence.mjs"
+      - "scripts/validate-managed-state-evidence.test.mjs"
       - "scripts/recovery-change-scope.sh"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -15,6 +17,8 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/validate-managed-state-evidence.mjs"
+      - "scripts/validate-managed-state-evidence.test.mjs"
       - "scripts/recovery-change-scope.sh"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -90,26 +94,14 @@ jobs:
       - name: Rebuild deterministic local state
         run: pnpm db:reset
 
+      - name: Test evidence fail-closed semantics
+        run: node --test scripts/validate-managed-state-evidence.test.mjs
+
       - name: Exercise managed-state loss and recovery
         run: node scripts/managed-state-recovery-rehearsal.mjs
 
       - name: Validate structured evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          jq -e '
-            .schemaVersion == 1 and
-            .kind == "managed-state-recovery-rehearsal" and
-            .target == "ephemeral-local-supabase" and
-            .productionDataCopied == false and
-            .productionSecretsUsed == false and
-            .productionRecoveryReady == false and
-            .originalIdentityPreserved == false and
-            .authRecoveryMode == "forced-reauth-reprovision" and
-            .storageRecoveryMode == "provider-api-object-reupload" and
-            (.checks | to_entries | all(.value == true)) and
-            (.limitations | length >= 1)
-          ' managed-state-recovery-evidence.json >/dev/null
+        run: node scripts/validate-managed-state-evidence.mjs managed-state-recovery-evidence.json
 
       - name: Upload non-sensitive recovery evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
