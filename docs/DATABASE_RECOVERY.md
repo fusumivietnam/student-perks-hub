@@ -53,6 +53,8 @@ A clean recovery target is rebuilt from reviewed migrations before application d
 
 The scheduled backup has no repository-variable enable/disable switch. Every scheduled run attempts the backup and fails closed if protected credentials are missing or the backup cannot be produced. Planned suspension therefore requires an explicit reviewed workflow change rather than a forgotten boolean variable.
 
+The backup package explicitly includes `auth_data.sql` from the managed `auth` schema, within the existing encrypted archive. This holds sensitive hashes and identity metadata: never extract it into artifacts, console logs, issues or a public bucket. The local database rehearsal currently checks package inclusion but **does not yet validate restoring original Auth IDs/password hashes**; this is not managed-state readiness evidence. Provider configuration and Storage object bytes remain separate.
+
 The daily Production backup artifact intentionally remains on a **30-day rolling retention window**. This protects recent application database state without turning GitHub Actions artifacts into long-term archival storage.
 
 Protected Production credentials required by this lane:

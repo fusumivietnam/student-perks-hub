@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Keep backup output and intermediate files private from creation time.
+umask 077
 
 : "${SUPABASE_DB_URL:?SUPABASE_DB_URL is required}"
 : "${BACKUP_ENCRYPTION_PASSPHRASE:?BACKUP_ENCRYPTION_PASSPHRASE is required}"
@@ -21,17 +23,22 @@ pnpm exec supabase db dump --db-url "${SUPABASE_DB_URL}" --data-only --use-copy 
   -x "storage.buckets_vectors" \
   -x "storage.vector_indexes" \
   -f "${work_dir}/data.sql"
+# Auth tables and hashed credentials must remain inside the encrypted artifact.
+# The ordinary application data dump is not evidence of managed Auth coverage.
+pnpm exec supabase db dump --db-url "${SUPABASE_DB_URL}" --schema auth --data-only --use-copy \
+  -f "${work_dir}/auth_data.sql"
+test -s "${work_dir}/auth_data.sql"
 pnpm exec supabase db dump --db-url "${SUPABASE_DB_URL}" --schema supabase_migrations -f "${work_dir}/history_schema.sql"
 pnpm exec supabase db dump --db-url "${SUPABASE_DB_URL}" --schema supabase_migrations --data-only --use-copy -f "${work_dir}/history_data.sql"
 
 cat > "${work_dir}/manifest.txt" <<EOF
 created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 format=logical-supabase-cli-v1
-contents=roles.sql,schema.sql,data.sql,history_schema.sql,history_data.sql
+contents=roles.sql,schema.sql,data.sql,auth_data.sql,history_schema.sql,history_data.sql
 EOF
 
 tar -C "${work_dir}" -czf - \
-  roles.sql schema.sql data.sql history_schema.sql history_data.sql manifest.txt |
+  roles.sql schema.sql data.sql auth_data.sql history_schema.sql history_data.sql manifest.txt |
   openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
     -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
     -out "${archive}"
