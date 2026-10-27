@@ -103,6 +103,8 @@ jobs:
             .target == "ephemeral-local-supabase" and
             .productionDataCopied == false and
             .productionSecretsUsed == false and
+            .productionRecoveryReady == false and
+            .originalIdentityPreserved == false and
             .authRecoveryMode == "forced-reauth-reprovision" and
             .storageRecoveryMode == "provider-api-object-reupload" and
             (.checks | to_entries | all(.value == true)) and

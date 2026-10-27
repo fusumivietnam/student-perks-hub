@@ -16,6 +16,12 @@ The Production managed-state guard reported **managed Auth state exists with no 
 | Storage bytes | actual binary payload (not only `storage.objects`) | upload fixture, destroy fixture target, restore bytes, compare SHA-256 | bytes missing even when metadata exists |
 | Provider settings | redirect URLs, SMTP, OAuth, MFA, JWT/key rotation, functions | reviewed rebuild checklist on isolated project | external provider access, secrets |
 
+## Existing synthetic local rehearsal and its boundary
+
+The repository already has `scripts/managed-state-recovery-rehearsal.mjs` and the scheduled `Managed State Recovery Rehearsal` workflow. They exercise **synthetic user deletion and re-provisioning** (with a new password) plus **object-byte re-upload** in local Supabase. This is useful regression coverage, but **not** an exported/restore-capable backup of Production Auth identities or Storage, and it does not prove original user-ID preservation, provider configuration recovery, or real-environment RPO/RTO.
+
+The rehearsal script must only connect to a loopback HTTP endpoint; it must not include provider response bodies in thrown exceptions. Its machine-readable evidence explicitly sets `productionRecoveryReady: false` and `originalIdentityPreserved: false`. Neither this evidence nor a green rehearsal authorizes disabling the managed-state recovery watch.
+
 ## Safe, staged rehearsal contract
 
 1. **Owner selects recovery strategy.** Either paid provider-backed Auth backup/restore plus separately tested object bytes, or a provider-supported encrypted export/import and approved re-auth/re-enrollment policy. Both require human review of user experience and cost.
