@@ -6,7 +6,7 @@ export function validateSyntheticEvidence(v) {
   for (const [name, expected] of Object.entries(required)) if(v[name] !== expected) throw Error("Invalid evidence field "+name);
   if (typeof v.verifiedAt !== "string" || !Number.isFinite(Date.parse(v.verifiedAt)) || new Date(v.verifiedAt).toISOString() !== v.verifiedAt) throw Error("Invalid timestamp");
   if (!v.checks || typeof v.checks !== "object" || Array.isArray(v.checks)) throw Error("Missing checks");
-  for(const key of ["initialAuthSignIn","authLossSimulated","recoveredAuthSignIn","initialStorageChecksum","storageLossSimulated","restoredStorageChecksum"]) if(v.checks[key] !== true) throw Error("Missing check "+key);
+  for(const key of ["initialAuthSignIn","authLossSimulated","recoveredAuthSignIn","initialStorageChecksum","storageLossSimulated","restoredStorageChecksum","independentStorageBackupVerified"]) if(v.checks[key] !== true) throw Error("Missing check "+key);
   if(!Array.isArray(v.limitations) || !v.limitations.includes("does-not-prove-preservation-of-original-auth-user-id-or-password-hash") || !v.limitations.includes("does-not-prove-provider-configuration-rebuild")) throw Error("Missing limitations");
   return true;
 }

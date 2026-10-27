@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, { encoding: "utf8", ...options });
@@ -68,6 +70,10 @@ const objectPath = "probe.txt";
 const payload = Buffer.from(`managed-state-recovery-${suffix}\n`, "utf8");
 const expectedSha256 = createHash("sha256").update(payload).digest("hex");
 
+// Store synthetic fixture bytes outside of the Storage service before simulating loss.
+// This is an isolated file-restore smoke test, not a Production backup.
+const recoveryDirectory = mkdtempSync(join(tmpdir(), "sph-storage-rehearsal-"));
+const recoveryFile = join(recoveryDirectory, "object.bin");
 let firstUserId;
 let recoveredUserId;
 try {
@@ -116,6 +122,13 @@ try {
     throw new Error("Initial Storage object checksum mismatch.");
   }
 
+  // Snapshot API-downloaded object bytes, not the original in-memory upload payload.
+  // Verify the independent artifact before destructive fixture operations.
+  writeFileSync(recoveryFile, initialBytes, { flag: "wx", mode: 0o600 });
+  if (createHash("sha256").update(readFileSync(recoveryFile)).digest("hex") !== expectedSha256) {
+    throw new Error("Independent Storage fixture backup checksum mismatch.");
+  }
+
   const removeObject = await fetch(`${apiUrl}/storage/v1/object/${bucket}/${objectPath}`, {
     method: "DELETE",
     headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
@@ -151,7 +164,7 @@ try {
       "Content-Type": "text/plain",
       "x-upsert": "true",
     },
-    body: payload,
+    body: readFileSync(recoveryFile),
   });
   if (!restoreObject.ok) throw new Error(`Storage restore upload failed: ${restoreObject.status}`);
 
@@ -181,8 +194,10 @@ try {
       initialStorageChecksum: true,
       storageLossSimulated: true,
       restoredStorageChecksum: true,
+      independentStorageBackupVerified: true,
     },
     limitations: [
+      "independent-storage-fixture-is-local-and-ephemeral-not-an-encrypted-production-backup",
       "does-not-prove-preservation-of-original-auth-user-id-or-password-hash",
       "does-not-prove-remote-managed-backup-or-pitr",
       "simulated-reprovision-only-not-a-restoration-of-the-original-auth-identity",
@@ -192,6 +207,7 @@ try {
   writeFileSync("managed-state-recovery-evidence.json", `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   console.log(JSON.stringify(evidence));
 } finally {
+  rmSync(recoveryDirectory, { recursive: true, force: true });
   if (recoveredUserId) {
     try { await request(`${apiUrl}/auth/v1/admin/users/${recoveredUserId}`, { method: "DELETE", key: serviceRoleKey }); } catch {}
   } else if (firstUserId) {
