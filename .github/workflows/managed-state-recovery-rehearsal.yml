@@ -104,9 +104,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          sudo apt-get install -y --no-install-recommends postgresql-client-17
+          sudo apt-get install -y --no-install-recommends postgresql-client-18
 
       - name: Verify original synthetic Auth identity and password roundtrip
+        env:
+          PATH: /usr/lib/postgresql/18/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: node scripts/local-auth-identity-roundtrip.mjs
 
       - name: Exercise managed-state loss and recovery
