@@ -38,13 +38,24 @@ async function request(url, { method = "GET", key, body, headers = {} } = {}) {
   });
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`${method} ${url} failed: ${response.status} ${text}`);
+    throw new Error(`Local managed-state API request failed: ${method} ${response.status}`);
   }
   return text ? JSON.parse(text) : null;
 }
 
 const status = parseEnv(run("pnpm", ["exec", "supabase", "status", "-o", "env"]));
 const apiUrl = status.API_URL ?? "http://127.0.0.1:54321";
+const endpoint = new URL(apiUrl);
+// This rehearsal creates/deletes identities and objects. Never let CLI context
+// switching or a misconfigured URL make the fixture operate on a remote project.
+if (
+  endpoint.protocol !== "http:" ||
+  !["127.0.0.1", "localhost", "::1", "[::1]"].includes(endpoint.hostname) ||
+  endpoint.username ||
+  endpoint.password
+) {
+  throw new Error("Managed-state rehearsal requires a local loopback Supabase API.");
+}
 const serviceRoleKey = status.SERVICE_ROLE_KEY ?? status.SECRET_KEY;
 if (!serviceRoleKey) throw new Error("Could not resolve local Supabase service-role/secret key.");
 
@@ -94,7 +105,7 @@ try {
     },
     body: payload,
   });
-  if (!upload.ok) throw new Error(`Storage upload failed: ${upload.status} ${await upload.text()}`);
+  if (!upload.ok) throw new Error(`Local Storage fixture upload failed: ${upload.status}`);
 
   const downloaded = await fetch(`${apiUrl}/storage/v1/object/${bucket}/${objectPath}`, {
     headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
@@ -159,6 +170,8 @@ try {
     productionDataCopied: false,
     productionSecretsUsed: false,
     authRecoveryMode: "forced-reauth-reprovision",
+    originalIdentityPreserved: false,
+    productionRecoveryReady: false,
     storageRecoveryMode: "provider-api-object-reupload",
     verifiedAt: new Date().toISOString(),
     checks: {
@@ -172,6 +185,7 @@ try {
     limitations: [
       "does-not-prove-preservation-of-original-auth-user-id-or-password-hash",
       "does-not-prove-remote-managed-backup-or-pitr",
+      "simulated-reprovision-only-not-a-restoration-of-the-original-auth-identity",
       "does-not-prove-provider-configuration-rebuild",
     ],
   };
