@@ -84,6 +84,10 @@ Structured evidence contains no Production PII, Auth rows, Storage paths, creden
 
 The rehearsal proves the application schema/data recovery mechanism. It does **not** prove Production Auth recovery or Storage object-byte recovery.
 
+## Managed-state recovery execution plan
+
+The action-oriented, fail-closed implementation and acceptance checklist is in [MANAGED_STATE_RECOVERY_PLAN.md](MANAGED_STATE_RECOVERY_PLAN.md). This document does not itself establish Auth/Storage recovery readiness.
+
 ## Managed Supabase state boundary
 
 Supabase-managed state requires separate treatment:
