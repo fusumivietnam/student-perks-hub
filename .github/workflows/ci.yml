@@ -375,11 +375,23 @@ jobs:
           DATABASE_RESULT: ${{ needs.database.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
+          VERIFY_REQUIRED: ${{ needs.changes.outputs.verify }}
+          DATABASE_REQUIRED: ${{ needs.changes.outputs.database }}
+          E2E_REQUIRED: ${{ needs.changes.outputs.e2e }}
+          LIGHTHOUSE_REQUIRED: ${{ needs.changes.outputs.lighthouse }}
         run: |
           set -euo pipefail
 
           [[ "${CHANGES_RESULT}" == "success" ]]
-          [[ "${VERIFY_RESULT}" == "success" || "${VERIFY_RESULT}" == "skipped" ]]
-          [[ "${DATABASE_RESULT}" == "success" || "${DATABASE_RESULT}" == "skipped" ]]
-          [[ "${E2E_RESULT}" == "success" || "${E2E_RESULT}" == "skipped" ]]
-          [[ "${LIGHTHOUSE_RESULT}" == "success" || "${LIGHTHOUSE_RESULT}" == "skipped" ]]
+          # A required job must succeed; skipping is allowed only when scope excludes it.
+          for job in VERIFY DATABASE E2E LIGHTHOUSE; do
+            required_var="${job}_REQUIRED"
+            result_var="${job}_RESULT"
+            required="${!required_var}"
+            result="${!result_var}"
+            case "${required}" in
+              true) [[ "${result}" == "success" ]] || { echo "::error::${job} required but ${result}"; exit 1; } ;;
+              false) [[ "${result}" == "skipped" || "${result}" == "success" ]] || { echo "::error::${job} unexpectedly ${result}"; exit 1; } ;;
+              *) echo "::error::Invalid ${job} scope: ${required}"; exit 1 ;;
+            esac
+          done
