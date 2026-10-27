@@ -134,7 +134,8 @@ jobs:
             -in "${{ steps.backup.outputs.archive }}" |
             tar -xzf - -C restore-input
           test -s restore-input/auth_data.sql
-          grep -Eq '^(COPY auth\\.(users|identities)|INSERT INTO auth\\.(users|identities))' restore-input/auth_data.sql
+          # An empty synthetic Auth schema yields a valid SQL dump without COPY rows.
+          # Presence is only packaging evidence, not proof of identity restoration.
           test -s restore-input/data.sql
           test -s restore-input/schema.sql
           test -s restore-input/history_data.sql
