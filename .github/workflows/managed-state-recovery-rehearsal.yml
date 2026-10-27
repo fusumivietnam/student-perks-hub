@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/local-auth-identity-roundtrip.mjs"
       - "scripts/validate-managed-state-evidence.mjs"
       - "scripts/validate-managed-state-evidence.test.mjs"
       - "scripts/recovery-change-scope.sh"
@@ -17,6 +18,7 @@ on:
     paths:
       - ".github/workflows/managed-state-recovery-rehearsal.yml"
       - "scripts/managed-state-recovery-rehearsal.mjs"
+      - "scripts/local-auth-identity-roundtrip.mjs"
       - "scripts/validate-managed-state-evidence.mjs"
       - "scripts/validate-managed-state-evidence.test.mjs"
       - "scripts/recovery-change-scope.sh"
@@ -96,6 +98,12 @@ jobs:
 
       - name: Test evidence fail-closed semantics
         run: node --test scripts/validate-managed-state-evidence.test.mjs
+
+      - name: Install PostgreSQL client for isolated Auth identity roundtrip
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Verify original synthetic Auth identity and password roundtrip
+        run: node scripts/local-auth-identity-roundtrip.mjs
 
       - name: Exercise managed-state loss and recovery
         run: node scripts/managed-state-recovery-rehearsal.mjs
