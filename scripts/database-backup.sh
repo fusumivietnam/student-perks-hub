@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Keep backup output and intermediate files private from creation time.
+umask 077
 
 : "${SUPABASE_DB_URL:?SUPABASE_DB_URL is required}"
 : "${BACKUP_ENCRYPTION_PASSPHRASE:?BACKUP_ENCRYPTION_PASSPHRASE is required}"
