@@ -6,7 +6,17 @@ import { join } from "node:path";
 
 function command(bin, args, env = process.env) {
   const out = spawnSync(bin, args, { encoding: "utf8", env });
-  if (out.status !== 0) throw Error("Local Auth recovery command failed: " + bin);
+  if (out.status !== 0) {
+    // Emit only a non-sensitive error category, never PostgreSQL output containing URLs or Auth data.
+    const stderr = out.stderr || "";
+    const category = /server version.*pg_dump version|aborting because of server version mismatch/i.test(stderr)
+      ? "postgres-client-server-version-mismatch"
+      : /permission denied|must be owner/i.test(stderr) ? "database-permission-denied"
+      : /connection refused|could not connect/i.test(stderr) ? "local-database-connection-failed"
+      : /not found|ENOENT/i.test(stderr) ? "postgres-client-unavailable"
+      : "unclassified-postgresql-command-failure";
+    throw Error("Local Auth recovery command failed: " + bin + " (" + category + ", exit=" + out.status + ")");
+  }
   return out.stdout.trim();
 }
 const status = Object.fromEntries(command("pnpm", ["exec", "supabase", "status", "-o", "env"])
