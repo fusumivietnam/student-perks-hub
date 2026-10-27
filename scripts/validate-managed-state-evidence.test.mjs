@@ -1,0 +1,8 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { validateSyntheticEvidence } from "./validate-managed-state-evidence.mjs";
+function fixture(){ return {schemaVersion:1,kind:"managed-state-recovery-rehearsal",target:"ephemeral-local-supabase",productionDataCopied:false,productionSecretsUsed:false,productionRecoveryReady:false,originalIdentityPreserved:false,authRecoveryMode:"forced-reauth-reprovision",storageRecoveryMode:"provider-api-object-reupload",verifiedAt:"2026-10-27T00:00:00.000Z",checks:{initialAuthSignIn:true,authLossSimulated:true,recoveredAuthSignIn:true,initialStorageChecksum:true,storageLossSimulated:true,restoredStorageChecksum:true},limitations:["does-not-prove-preservation-of-original-auth-user-id-or-password-hash","does-not-prove-provider-configuration-rebuild"]}; }
+test("accepts explicitly non-Production synthetic evidence",()=>assert.equal(validateSyntheticEvidence(fixture()),true));
+for(const [name,field,value] of [["forged readiness","productionRecoveryReady",true],["remote target","target","production"],["Production data","productionDataCopied",true],["original identity claim","originalIdentityPreserved",true],["invalid timestamp","verifiedAt","yesterday"],["removed limitations","limitations",[]]]){test("rejects "+name,()=>{const f=fixture();f[field]=value;assert.throws(()=>validateSyntheticEvidence(f));});}
+test("rejects incomplete byte recovery",()=>{const f=fixture();f.checks.restoredStorageChecksum=false;assert.throws(()=>validateSyntheticEvidence(f));});
+test("rejects incomplete Auth recovery",()=>{const f=fixture();delete f.checks.recoveredAuthSignIn;assert.throws(()=>validateSyntheticEvidence(f));});
