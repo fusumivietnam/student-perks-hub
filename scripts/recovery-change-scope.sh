@@ -18,7 +18,7 @@ fi
 
 changed_files="$(git diff --name-only "${base_sha}" "${head_sha}")"
 
-if grep -Eq '^(supabase/|scripts/(database-backup\.sh|managed-state-recovery-rehearsal\.mjs|recovery-change-scope\.sh)$|\.github/workflows/(database-backup|database-recovery-rehearsal|managed-state-recovery-rehearsal)\.yml$)' <<< "${changed_files}"; then
+if grep -Eq '^(scripts/(local-auth-identity-roundtrip|validate-managed-state-evidence(\\.test)?)\\.mjs$|supabase/|scripts/(database-backup\.sh|managed-state-recovery-rehearsal\.mjs|recovery-change-scope\.sh)$|\.github/workflows/(database-backup|database-recovery-rehearsal|managed-state-recovery-rehearsal)\.yml$)' <<< "${changed_files}"; then
   echo "relevant=true"
   exit 0
 fi
