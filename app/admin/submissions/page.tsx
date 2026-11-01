@@ -265,14 +265,14 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                         value="approved"
                         className="min-h-11 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"
                       >
-                        Approve
+                        Duyệt đề xuất
                       </button>
                       <button
                         name="status"
                         value="rejected"
                         className="min-h-11 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700"
                       >
-                        Reject
+                        Từ chối đề xuất
                       </button>
                     </div>
                   </form>
@@ -289,7 +289,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                   <form action={createDraftFromSubmission} className="mt-5 grid gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 sm:grid-cols-2">
                     <input type="hidden" name="submissionId" value={submission.id} />
                     <label className="grid gap-1.5 text-sm font-medium">
-                      Draft slug
+                      Đường dẫn bản nháp
                       <input
                         name="slug"
                         required
@@ -299,9 +299,9 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                       />
                     </label>
                     <label className="grid gap-1.5 text-sm font-medium">
-                      Category
+                      Danh mục
                       <select name="categoryId" defaultValue="" className="rounded-lg border bg-white px-3 py-2">
-                        <option value="">No category</option>
+                        <option value="">Chưa chọn danh mục</option>
                         {categoriesResult.data?.map((category) => (
                           <option key={category.id} value={category.id}>
                             {category.name}
@@ -311,7 +311,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                     </label>
                     <button className="min-h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white sm:col-span-2">
                       <FilePlus2 className="size-4" aria-hidden="true" />
-                      Create draft offer
+                      Tạo bản nháp ưu đãi
                     </button>
                   </form>
                 ) : null}
@@ -319,7 +319,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                 {linkedOffer ? (
                   <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
                     <FileCheck2 className="size-4" aria-hidden="true" />
-                    Draft linked: {linkedOffer.slug}
+                    Bản nháp đã liên kết: {linkedOffer.slug}
                   </div>
                 ) : null}
               </Card></article>
