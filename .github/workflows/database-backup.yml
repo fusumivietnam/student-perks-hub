@@ -64,6 +64,24 @@ jobs:
         shell: bash
         run: sha256sum --check "${{ steps.backup.outputs.checksum }}"
 
+      - name: Verify encrypted archive is decryptable and complete
+        shell: bash
+        env:
+          BACKUP_ARCHIVE: ${{ steps.backup.outputs.archive }}
+        run: |
+          set -euo pipefail
+          # Stream-decrypt in memory; do not write any plaintext backup to disk or logs.
+          entries="$(openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
+            -in "${BACKUP_ARCHIVE}" | tar -tzf -)"
+          for required in roles.sql schema.sql data.sql auth_data.sql history_schema.sql history_data.sql manifest.txt; do
+            if ! grep -Fxq "${required}" <<< "${entries}"; then
+              echo "::error::Encrypted backup is missing required member ${required}"
+              exit 1
+            fi
+          done
+          echo "Encrypted backup decrypted successfully and all seven required members are present."
+
       - name: Upload encrypted backup only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
