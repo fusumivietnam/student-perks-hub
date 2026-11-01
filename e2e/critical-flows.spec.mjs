@@ -219,6 +219,6 @@ test("admin can review a pending submission", async ({ page }) => {
 
   const submission = page.locator("article").filter({ hasText: title });
   await expect(submission).toBeVisible();
-  await submission.getByRole("button", { name: "Approve" }).click();
+  await submission.getByRole("button", { name: "Duyệt đề xuất" }).click();
   await expect(submission.getByText("Đã duyệt", { exact: true })).toBeVisible();
 });
