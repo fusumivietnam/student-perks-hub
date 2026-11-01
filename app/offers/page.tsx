@@ -71,7 +71,7 @@ export default async function OffersPage({
   searchParams: Promise<SearchParams>;
 }) {
   const raw = await searchParams;
-  const q = one(raw.q)?.trim() ?? "";
+  const q = (one(raw.q)?.trim() ?? "").slice(0, 80);
   const category = one(raw.category) ?? "";
   const benefit = one(raw.benefit) ?? "";
   const audience = one(raw.audience) ?? "";
@@ -212,6 +212,7 @@ export default async function OffersPage({
 
       <form
         action="/offers"
+        role="search"
         className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:flex-nowrap"
       >
         <Input
@@ -345,7 +346,7 @@ export default async function OffersPage({
               {currentPage < totalPages ? (
                 <Link
                   href={hrefWith(current, { page: String(currentPage + 1) })}
-                  className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                  className="inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold"
                   rel="next"
                 >
                   Trang sau

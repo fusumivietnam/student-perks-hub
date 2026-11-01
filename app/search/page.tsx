@@ -35,7 +35,7 @@ export default async function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const q = one(params.q)?.trim() ?? "";
+  const q = (one(params.q)?.trim() ?? "").slice(0, 80);
   const page = pageNumber(one(params.page));
   const result = q
     ? await getOfferDiscovery({ q, page, sort: "recent" })
@@ -59,7 +59,7 @@ export default async function SearchPage({
         Tìm theo tên chương trình hoặc nhà cung cấp. Dùng bộ lọc nâng cao tại trang Tất cả ưu đãi.
       </p>
 
-      <form action="/search" className="mt-8 flex gap-2 rounded-2xl border bg-white p-2 shadow-sm">
+      <form action="/search" role="search" className="mt-8 flex flex-wrap gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:flex-nowrap">
         <Input
           type="search"
           name="q"
@@ -68,12 +68,20 @@ export default async function SearchPage({
           required
           maxLength={80}
           placeholder="GitHub, Notion, Figma, Azure..."
-          className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
+          className="min-w-0 flex-1 basis-full border-0 shadow-none focus-visible:ring-0 sm:basis-auto"
         />
-        <Button>
-          Tìm
+        <Button className="w-full sm:w-auto">
+          Tìm ưu đãi
         </Button>
       </form>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-slate-500">Gợi ý:</span>
+        {["GitHub", "Notion", "Figma", "AI"].map((term) => (
+          <Link key={term} href={`/search?q=${encodeURIComponent(term)}`} className="inline-flex min-h-10 items-center rounded-full border bg-white px-3 font-medium text-slate-700 transition hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{term}</Link>
+        ))}
+        {q ? <Link href="/search" className="ml-auto font-semibold text-primary hover:underline">Xóa tìm kiếm</Link> : null}
+      </div>
 
       {!q ? (
         <div className="mt-8 rounded-2xl border border-dashed bg-slate-50 p-10 text-center">
@@ -93,7 +101,7 @@ export default async function SearchPage({
       ) : (
         <>
           <div className="mt-8 flex items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">{result.count} kết quả cho “{q}”</p>
+            <p className="text-sm text-slate-500" role="status">{result.count} kết quả cho “{q}”</p>
             <Link href={`/offers?q=${encodeURIComponent(q)}`} className="text-sm font-semibold text-primary hover:underline">
               Mở bộ lọc nâng cao
             </Link>
