@@ -151,7 +151,7 @@ export default async function AccountSubmissionsPage({
         </div>
         <Link
           href="/submit"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white"
         >
           <Send className="size-4" aria-hidden="true" />
           Gửi ưu đãi mới
@@ -197,7 +197,7 @@ export default async function AccountSubmissionsPage({
               key={filter.value}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-sm font-semibold transition ${
                 active
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
@@ -227,7 +227,7 @@ export default async function AccountSubmissionsPage({
                       href={submission.official_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 inline-flex min-h-6 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                      className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
                     >
                       Link chính thức
                       <ExternalLink className="size-3.5" aria-hidden="true" />
@@ -261,7 +261,7 @@ export default async function AccountSubmissionsPage({
                 {submission.status === "pending" ? (
                   <form action={cancelSubmission} className="mt-4">
                     <input type="hidden" name="submissionId" value={submission.id} />
-                    <button className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50">
+                    <button className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50">
                       <XCircle className="size-4" aria-hidden="true" />
                       Hủy đề xuất
                     </button>
@@ -287,7 +287,7 @@ export default async function AccountSubmissionsPage({
           {activeStatus !== "all" ? (
             <Link
               href="/account/submissions"
-              className="mt-4 inline-flex rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              className="mt-4 inline-flex min-h-11 items-center rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Xem tất cả đề xuất
             </Link>
