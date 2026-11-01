@@ -108,6 +108,9 @@ export default async function HomePage() {
                 <Input
                   id="home-search"
                   name="q"
+                  type="search"
+                  maxLength={80}
+                  aria-label="Tìm ưu đãi theo tên hoặc nhà cung cấp"
                   placeholder={uiConfig.public.searchPlaceholder}
                   className="w-full border-0 bg-transparent shadow-none focus-visible:ring-0"
                 />
