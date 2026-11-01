@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CategoryCard } from "@/components/categories/category-card";
 import { getCategories } from "@/lib/queries/categories";
 
@@ -29,6 +30,7 @@ export default async function CategoriesPage() {
           <p className="mt-1 text-sm text-slate-500">
             Danh mục sẽ xuất hiện khi có nội dung được cập nhật.
           </p>
+          <Link href="/offers" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">Xem tất cả ưu đãi</Link>
         </div>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -37,6 +39,10 @@ export default async function CategoriesPage() {
           ))}
         </div>
       )}
+      <div className="mt-10 flex flex-wrap items-center gap-3 border-t pt-6">
+        <p className="text-sm text-slate-600">Chưa biết bắt đầu từ đâu?</p>
+        <Link href="/offers" className="inline-flex min-h-11 items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-primary hover:border-primary">Duyệt tất cả ưu đãi</Link>
+      </div>
     </section>
   );
 }
