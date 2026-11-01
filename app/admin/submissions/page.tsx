@@ -170,7 +170,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
               key={filter.value}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-sm font-semibold transition ${
                 active
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
@@ -213,7 +213,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                       href={submission.official_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 inline-flex min-h-6 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                      className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
                     >
                       Liên kết chính thức
                       <ExternalLink className="size-3.5" aria-hidden="true" />
@@ -250,7 +250,7 @@ export default async function AdminSubmissionsPage({ searchParams }: AdminSubmis
                   <form action={reviewSubmission} className="mt-5 grid gap-3 rounded-xl border bg-slate-50 p-4">
                     <input type="hidden" name="submissionId" value={submission.id} />
                     <label className="grid gap-1.5 text-sm font-medium">
-                      Review note
+                      Phản hồi cho người gửi
                       <textarea
                         name="reviewNote"
                         rows={2}

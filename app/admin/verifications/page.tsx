@@ -142,7 +142,7 @@ export default async function AdminVerificationsPage({
     <main className="w-full px-4 py-10 sm:px-8 xl:px-10">
       <Link
         href="/admin"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
+        className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Quản trị
@@ -172,7 +172,7 @@ export default async function AdminVerificationsPage({
               key={item.value}
               href={link}
               aria-current={active ? "page" : undefined}
-              className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-sm font-semibold transition ${
                 active
                   ? "border-slate-900 bg-slate-900 text-white"
                   : "bg-white text-slate-600 hover:border-slate-400 hover:text-slate-950"
@@ -257,7 +257,7 @@ export default async function AdminVerificationsPage({
                             value={verification.id}
                           />
                           <input type="hidden" name="status" value="verified" />
-                          <button className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">
+                          <button className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">
                             <ShieldCheck className="size-4" aria-hidden="true" />
                             Xác minh 1 năm
                           </button>
@@ -269,7 +269,7 @@ export default async function AdminVerificationsPage({
                             value={verification.id}
                           />
                           <input type="hidden" name="status" value="rejected" />
-                          <button className="rounded-xl border px-3 py-2 text-sm font-semibold text-slate-700">
+                          <button className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold text-slate-700">
                             Từ chối
                           </button>
                         </form>
