@@ -44,13 +44,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </p>
 
       {error ? (
-        <p className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </p>
       ) : null}
 
       {message ? (
-        <p className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+        <p role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
           {message}
         </p>
       ) : null}
@@ -88,15 +88,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           />
         </label>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
-            Đăng nhập
-          </button>
+        <button type="submit" className="min-h-11 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
+          Đăng nhập
+        </button>
+        <div className="border-t pt-5">
+          <p className="text-sm text-slate-600">Chưa có tài khoản? Bạn có thể đăng ký với email và mật khẩu vừa nhập.</p>
           <button
+            type="submit"
             formAction={signUp}
-            className="rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700"
+            className="mt-3 min-h-11 w-full rounded-xl border px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary"
           >
-            Tạo tài khoản
+            Đăng ký tài khoản
           </button>
         </div>
       </form>
