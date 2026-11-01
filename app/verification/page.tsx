@@ -117,7 +117,7 @@ export default async function VerificationPage({
     <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
+        className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Tài khoản
@@ -164,7 +164,7 @@ export default async function VerificationPage({
           <p className="text-sm font-semibold text-primary">Trạng thái hiện tại</p>
           {verification && status && StatusIcon ? (
             <div className="mt-4">
-              <div className={`flex items-start gap-3 rounded-2xl border p-4 ${status.className}`}>
+              <div role="status" className={`flex items-start gap-3 rounded-2xl border p-4 ${status.className}`}>
                 <StatusIcon className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
                 <div>
                   <h2 className="font-bold">{status.label}</h2>
@@ -254,7 +254,7 @@ export default async function VerificationPage({
                   className="rounded-xl border px-3 py-2.5"
                 />
               </label>
-              <button className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
+              <button className="min-h-11 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white">
                 Gửi yêu cầu xác minh
               </button>
               <p className="text-xs leading-5 text-slate-500">
