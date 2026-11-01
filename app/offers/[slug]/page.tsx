@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BadgeCheck, CalendarDays } from "lucide-react";
+import { brandSlug } from "@/lib/brands";
 
 import { updateBookmark } from "@/app/saved/actions";
 import { OfferCard } from "@/components/offers/offer-card";
@@ -90,6 +91,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
   ]);
   const bookmarked = auth ? await isOfferBookmarked(auth.id, offer.id) : false;
   const verifiedDate = formatVerifiedDate(offer.last_verified_at);
+  const providerSlug = brandSlug(offer.provider);
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -119,9 +121,11 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
             </Badge>
           </div>
 
-          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {offer.provider}
-          </p>
+          <div className="mt-6 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {providerSlug ? (
+              <Link href={`/brands/${providerSlug}`} className="inline-flex min-h-11 items-center text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Thương hiệu: {offer.provider}</Link>
+            ) : offer.provider}
+          </div>
           <h1 className="mt-2 max-w-4xl text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
             {offer.title}
           </h1>

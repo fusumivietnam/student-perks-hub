@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
-  if (!brand) return { title: "Thương hiệu không tồn tại" };
+  if (!brand) return { title: "Thương hiệu không tồn tại", robots: { index: false, follow: false } };
 
   return {
     title: `${brand.name} — ưu đãi sinh viên`,
@@ -42,16 +42,24 @@ export default async function BrandPage({
             {brand.offers.length} ưu đãi đang được publish. Mỗi ưu đãi dẫn tới nguồn chính thức để bạn tự kiểm tra điều kiện trước khi đăng ký.
           </p>
         </div>
-        <Link href={`/search?q=${encodeURIComponent(brand.name)}`} className="rounded-xl border px-4 py-2.5 text-sm font-semibold">
+        <Link href={`/search?q=${encodeURIComponent(brand.name)}`} className="inline-flex min-h-11 items-center rounded-xl border px-4 py-2.5 text-sm font-semibold">
           Tìm {brand.name}
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {brand.offers.map((offer) => (
-          <OfferCard key={offer.id} offer={offer} />
-        ))}
-      </div>
+      {brand.offers.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-dashed bg-slate-50 p-8 text-center">
+          <p className="font-semibold">Chưa có ưu đãi đang hoạt động từ {brand.name}.</p>
+          <p className="mt-2 text-sm text-slate-600">Bạn có thể khám phá các thương hiệu và chương trình khác trong lúc chờ cập nhật.</p>
+          <Link href="/offers" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">Khám phá ưu đãi khác</Link>
+        </div>
+      ) : (
+        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {brand.offers.map((offer) => (
+            <OfferCard key={offer.id} offer={offer} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-10 border-t pt-6">
         <Link href="/offers" className="text-sm font-semibold text-primary hover:underline">
