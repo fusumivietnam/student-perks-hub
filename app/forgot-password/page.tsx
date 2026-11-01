@@ -35,13 +35,13 @@ export default async function ForgotPasswordPage({
       </p>
 
       {error ? (
-        <p className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </p>
       ) : null}
 
       {sent ? (
-        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+        <div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
           Nếu email thuộc một tài khoản, liên kết đặt lại mật khẩu đã được gửi. Hãy kiểm tra cả thư mục spam.
         </div>
       ) : (
