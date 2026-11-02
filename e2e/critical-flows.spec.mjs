@@ -217,7 +217,7 @@ test("submission owner sees admin rejection and moderation feedback", async ({ p
   await page.getByLabel("Link chính thức").fill(`https://example.com/feedback-${runId}`);
   await page.getByRole("button", { name: "Gửi đề xuất" }).click();
 
-  await expect(page).toHaveURL(/\\/account\\/submissions\\?submitted=1/);
+  await expect(page).toHaveURL((url) => url.pathname === "/account/submissions" && url.searchParams.get("submitted") === "1");
   const ownedSubmission = page.locator("article").filter({ hasText: title });
   await expect(ownedSubmission).toBeVisible();
   await expect(ownedSubmission.getByText("Đang chờ duyệt", { exact: true })).toBeVisible();
