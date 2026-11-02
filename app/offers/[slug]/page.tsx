@@ -91,6 +91,13 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
   ]);
   const bookmarked = auth ? await isOfferBookmarked(auth.id, offer.id) : false;
   const verifiedDate = formatVerifiedDate(offer.last_verified_at);
+  const verifiedAt = offer.last_verified_at ? Date.parse(offer.last_verified_at) : NaN;
+  const intervalDays = offer.verification_interval_days;
+  const needsReverification =
+    Number.isFinite(verifiedAt) &&
+    typeof intervalDays === "number" &&
+    intervalDays > 0 &&
+    Date.now() - verifiedAt > intervalDays * 24 * 60 * 60 * 1000;
   const providerSlug = brandSlug(offer.provider);
 
   return (
@@ -218,6 +225,12 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
                 Đăng nhập để lưu
               </Link>
             )}
+
+            {needsReverification ? (
+              <div role="note" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                Thông tin ưu đãi đã đến hạn kiểm tra lại. Quyền lợi và điều kiện có thể thay đổi; vui lòng xác nhận với nhà cung cấp trước khi đăng ký.
+              </div>
+            ) : null}
 
             {verifiedDate ? (
               <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
