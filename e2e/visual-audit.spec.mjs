@@ -4,6 +4,13 @@ import { mkdir } from "node:fs/promises";
 const screens = [
   { id: "home", path: "/", admin: false },
   { id: "offers", path: "/offers", admin: false },
+  { id: "search", path: "/search?q=GitHub", admin: false },
+  { id: "categories", path: "/categories", admin: false },
+  { id: "brand", path: "/brands/github", admin: false },
+  { id: "submit", path: "/submit", admin: false },
+  { id: "about", path: "/about", admin: false },
+  { id: "privacy", path: "/privacy", admin: false },
+  { id: "terms", path: "/terms", admin: false },
   { id: "offer-detail", path: "/offers/github-student-developer-pack", admin: false },
   { id: "admin-dashboard", path: "/admin", admin: true },
   { id: "admin-offers", path: "/admin/content/offers", admin: true },
@@ -13,7 +20,7 @@ const screens = [
   { id: "admin-categories", path: "/admin/content/categories", admin: true },
 ];
 
-test("approved nine-screen visual audit evidence at desktop and mobile", async ({ page }) => {
+test("launch-critical public and admin visual audit at desktop and mobile", async ({ page }) => {
   const email = process.env.E2E_ADMIN_EMAIL;
   const password = process.env.E2E_ADMIN_PASSWORD;
   if (!email || !password) throw new Error("Visual audit requires deterministic admin E2E credentials.");
