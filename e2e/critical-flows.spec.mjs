@@ -95,6 +95,30 @@ test("login preserves the ownership return path across an authentication error",
   await expect(page.getByRole("heading", { name: "Đề xuất của tôi" })).toBeVisible();
 });
 
+test("password recovery does not disclose unknown-account existence", async ({ page }) => {
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email").fill(`unknown-recovery-${Date.now()}@example.invalid`);
+  await page.getByRole("button", { name: "Gửi liên kết đặt lại mật khẩu" }).click();
+
+  await expect(page).toHaveURL((url) =>
+    url.pathname === "/forgot-password" && url.searchParams.get("sent") === "1",
+  );
+  await expect(page.getByRole("status")).toContainText(
+    "Nếu email thuộc một tài khoản",
+  );
+});
+
+test("missing recovery session and invalid callback fail closed", async ({ page }) => {
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.has("error"));
+  await expect(page.getByRole("heading", { name: "Đăng nhập" })).toBeVisible();
+
+  const response = await page.goto("/auth/callback?next=/reset-password");
+  expect(response?.ok()).toBeTruthy();
+  await expect(page).toHaveURL((url) => url.pathname === "/login" && url.searchParams.has("error"));
+  await expect(page.getByRole("heading", { name: "Đăng nhập" })).toBeVisible();
+});
+
 test("authenticated user can save and remove an offer", async ({ page }) => {
   await login(page);
 
