@@ -42,6 +42,13 @@ test("anonymous discovery reaches a verified offer detail", async ({ page }) => 
   );
 });
 
+test("Azure student eligibility prominently discloses minimum age", async ({ page }) => {
+  await page.goto("/offers/azure-for-students");
+
+  await expect(page.getByRole("heading", { name: "Azure for Students" })).toBeVisible();
+  await expect(page.getByText(/từ 18 tuổi trở lên/)).toBeVisible();
+});
+
 test("unknown route renders the branded not-found state", async ({ page }) => {
   const response = await page.goto("/__e2e_missing_route__");
 
