@@ -229,7 +229,9 @@ test("submission owner sees admin rejection and moderation feedback", async ({ p
   await expect(review).toBeVisible();
   await review.getByLabel("Phản hồi cho người gửi").fill(reviewNote);
   await review.getByRole("button", { name: "Từ chối đề xuất" }).click();
-  await expect(review.getByText("Từ chối", { exact: true })).toBeVisible();
+  await expect(review).toHaveCount(0);
+  await page.goto("/admin/submissions?status=rejected&q=" + encodeURIComponent(title));
+  await expect(page.locator("article").filter({ hasText: title }).getByText("Từ chối", { exact: true })).toBeVisible();
 
   await page.context().clearCookies();
   await login(page);
