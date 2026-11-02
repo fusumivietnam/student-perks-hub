@@ -204,6 +204,45 @@ test("student request can be approved by admin and becomes verified", async ({ p
   await expect(page.getByText(institution)).toBeVisible();
 });
 
+
+test("submission owner sees admin rejection and moderation feedback", async ({ page }) => {
+  const runId = Date.now();
+  const title = `E2E Owner Feedback ${runId}`;
+  const reviewNote = `Vui lòng xác minh lại đường dẫn chính thức (${runId}).`;
+
+  await login(page);
+  await page.goto("/submit");
+  await page.getByLabel("Nhà cung cấp").fill("E2E Feedback Provider");
+  await page.getByLabel("Tên ưu đãi").fill(title);
+  await page.getByLabel("Link chính thức").fill(`https://example.com/feedback-${runId}`);
+  await page.getByRole("button", { name: "Gửi đề xuất" }).click();
+
+  await expect(page).toHaveURL((url) => url.pathname === "/account/submissions" && url.searchParams.get("submitted") === "1");
+  const ownedSubmission = page.locator("article").filter({ hasText: title });
+  await expect(ownedSubmission).toBeVisible();
+  await expect(ownedSubmission.getByText("Đang chờ duyệt", { exact: true })).toBeVisible();
+
+  await page.context().clearCookies();
+  await loginWith(page, adminEmail, adminPassword);
+  await page.goto("/admin/submissions?status=pending&q=" + encodeURIComponent(title));
+  const review = page.locator("article").filter({ hasText: title });
+  await expect(review).toBeVisible();
+  await review.getByLabel("Phản hồi cho người gửi").fill(reviewNote);
+  await review.getByRole("button", { name: "Từ chối đề xuất" }).click();
+  await expect(review).toHaveCount(0);
+  await page.goto("/admin/submissions?status=rejected&q=" + encodeURIComponent(title));
+  await expect(page.locator("article").filter({ hasText: title }).getByText("Từ chối", { exact: true })).toBeVisible();
+
+  await page.context().clearCookies();
+  await login(page);
+  await page.goto("/account/submissions?status=rejected");
+  const rejected = page.locator("article").filter({ hasText: title });
+  await expect(rejected).toBeVisible();
+  await expect(rejected.getByText("Không được duyệt", { exact: true })).toBeVisible();
+  await expect(rejected.getByText(reviewNote)).toBeVisible();
+  await expect(rejected.getByRole("button", { name: "Hủy đề xuất" })).toHaveCount(0);
+});
+
 test("admin can review a pending submission", async ({ page }) => {
   const runId = Date.now();
   const title = `E2E Admin Review ${runId}`;
