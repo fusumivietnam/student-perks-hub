@@ -77,6 +77,10 @@ export async function generateMetadata({
   };
 }
 
+async function currentTime() {
+  return Date.now();
+}
+
 export default async function OfferDetailPage({ params }: OfferPageProps) {
   const { slug } = await params;
   const offer = await getOfferBySlug(slug);
@@ -97,7 +101,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
     Number.isFinite(verifiedAt) &&
     typeof intervalDays === "number" &&
     intervalDays > 0 &&
-    Date.now() - verifiedAt > intervalDays * 24 * 60 * 60 * 1000;
+    new Date(offer.last_verified_at!).getTime() + intervalDays * 24 * 60 * 60 * 1000 < await currentTime();
   const providerSlug = brandSlug(offer.provider);
 
   return (
