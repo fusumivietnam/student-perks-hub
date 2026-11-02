@@ -122,7 +122,7 @@ values
     (select id from public.categories where slug = 'cloud-hosting'),
     'credit',
     '$100 Azure credit',
-    'Dành cho sinh viên đại học toàn thời gian đủ điều kiện. Đăng ký bằng email trường; không yêu cầu thẻ tín dụng.',
+    'Dành cho sinh viên từ 18 tuổi trở lên, đang học toàn thời gian tại cơ sở giáo dục được công nhận và có cấp bằng. Cần xác minh bằng email trường; không yêu cầu thẻ tín dụng. Không áp dụng cho khóa MOOC hoặc đào tạo nghề thương mại.',
     'Mở Azure for Students, đăng nhập/xác minh bằng email trường và hoàn tất đăng ký tài khoản sinh viên.',
     array['student'],
     array['cloud', 'azure', 'credit'],
