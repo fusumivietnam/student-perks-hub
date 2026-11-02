@@ -101,7 +101,7 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
     Number.isFinite(verifiedAt) &&
     typeof intervalDays === "number" &&
     intervalDays > 0 &&
-    new Date(offer.last_verified_at!).getTime() + intervalDays * 24 * 60 * 60 * 1000 < await currentTime();
+    verifiedAt + intervalDays * 24 * 60 * 60 * 1000 < (await currentTime());
   const providerSlug = brandSlug(offer.provider);
 
   return (
