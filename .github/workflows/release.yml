@@ -381,8 +381,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "${DEPLOYMENT_URL}" =~ ^https:// ]] || { echo "Deployment URL missing"; exit 1; }
-          vercel promote "${DEPLOYMENT_URL}" --yes
-          vercel promote status --timeout 90s
+          vercel promote "${DEPLOYMENT_URL}" --yes --timeout=5m
 
   smoke:
     name: Post-deploy smoke checks
