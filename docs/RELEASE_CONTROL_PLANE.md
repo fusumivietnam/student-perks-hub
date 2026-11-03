@@ -57,8 +57,9 @@ The workflow:
 4. plans/applies permitted Production migrations;
 5. builds the Vercel Production artifact from the same SHA;
 6. deploys that artifact;
-7. runs smoke checks;
-8. stores `release-evidence.json` as a 30-day artifact.
+7. explicitly promotes the **same immutable Production deployment** to the canonical Vercel aliases and waits for promotion to complete (Vercel `READY` alone does not prove alias assignment);
+8. runs smoke checks requiring canonical and immutable `/api/health` to match the exact SHA and deployment ID;
+9. stores `release-evidence.json` as a 30-day artifact.
 
 ## Preview validation
 
