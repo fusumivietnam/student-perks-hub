@@ -371,6 +371,19 @@ jobs:
           [[ "${deployment_url}" =~ ^https:// ]] || { echo "Could not resolve deployment URL: ${deployment_url}"; exit 1; }
           echo "url=${deployment_url}" >> "$GITHUB_OUTPUT"
 
+      # Production deployments may be READY without the canonical alias being moved.
+      # Promote the same immutable artifact before smoke validates SHA + deployment ID.
+      - name: Promote exact deployment to Production aliases
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          [[ "${DEPLOYMENT_URL}" =~ ^https:// ]] || { echo "Deployment URL missing"; exit 1; }
+          vercel promote "${DEPLOYMENT_URL}" --yes
+          vercel promote status --timeout 90s
+
   smoke:
     name: Post-deploy smoke checks
     needs: [validate, migration-plan, deploy]
